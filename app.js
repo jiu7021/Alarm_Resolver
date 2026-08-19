@@ -5,17 +5,17 @@ const $ = s => document.querySelector(s);
 const GRADE_KO = {CRIT:'긴급', MAJ:'중요', MIN:'주의', SNSR:'센서의심', INFO:'정보'};
 const COL = {CRIT:'#ff5252', MAJ:'#ff9f40', MIN:'#ffd23f', SNSR:'#4dabf7', INFO:'#51cf66'};
 const OSLIM = {L:11000, M:12000};
-const SPEED = {5:400, 20:100, 50:40};          // 배속 -> 1스텝(6분) 표시 간격 [ms]
+const SPEED = {1:2000, 5:400, 20:100, 50:40};   // 배속 -> 1스텝(6분) 표시 간격 [ms]
 
 let day = 0, eqp = 0, logv = 'alarm';
-let cur = 99, playing = false, speed = 20, timer = null, pending = null;
-let decided = {};                               // 사람이 판단한 알람: id -> '승인' | '보류'
+let cur = 99, playing = false, speed = 20, timer = null;
+let queue = [], saved = null;                   // 판단 대기 큐 / 강등 전 배속
+let decided = {};                               // 사람이 판단한 조치: key -> '승인' | '보류'
+const key = c => c.alarm_id + (c.esc ? '#esc' : '');
 
 const N = () => S[day].equipments[0].series.t.length;
 const nowT = () => S[day].equipments[0].series.t[Math.max(cur, 0)];
-// 알람이 시작 시각 기준 몇 번째 스텝에서 발생하는지
-const stepOf = a => S[day].equipments[0].series.t.indexOf(a.time);
-const endOf  = a => S[day].equipments[0].series.t.indexOf(a.end);
+const stepOf = a => a.step, endOf = a => a.endStep;
 
 // ── 차트 ──────────────────────────────────────────────
 const W = 760, H = 88, PL = 46, PR = 10, PT = 8, PB = 15;
@@ -97,13 +97,12 @@ function renderLog() {
         <span class="r">${a.value} · ${a.repeat}회 지속<br>${end}</span></div>`;
     }).join('');
   } else {
-    const ids = new Set(vis.map(a => a.id));
-    const ord = Object.fromEntries(vis.map((a,i) => [a.id, i]));
-    rows = d.actions.filter(c => ids.has(c.alarm_id)).sort((x,y) => ord[x.alarm_id] - ord[y.alarm_id]).reverse().map(c => {
+    rows = d.actions.filter(c => c.step <= cur).sort((x,y) => x.step - y.step).reverse().map(c => {
       const a = d.alarms.find(x => x.id === c.alarm_id);
-      const dec = decided[c.alarm_id];
+      const dec = decided[key(c)];
       const pill = c.auto ? `<span class="pill auto">자동 실행</span>`
                  : dec ? `<span class="pill ${dec==='승인'?'auto':'man'}">사람 판단: ${dec}</span>`
+                 : c.esc ? `<span class="pill man">에스컬레이션 · 대기</span>`
                        : `<span class="pill man">승인 대기</span>`;
       return `<div class="row"><span class="led ${c.grade}"></span><span class="tm">${c.time}</span>
         <span class="t"><b>${c.act}</b><i>${c.eqp}</i> ${pill}
@@ -113,13 +112,13 @@ function renderLog() {
   }
   $('#log').innerHTML = legend + (rows || '<p class="empty">아직 발생한 항목이 없습니다.</p>');
   $('#na').textContent = vis.length;
-  $('#nc').textContent = d.actions.filter(c => vis.some(a => a.id === c.alarm_id)).length;
+  $('#nc').textContent = d.actions.filter(c => c.step <= cur).length;
 }
 
 // ── 재생 ──────────────────────────────────────────────
 function renderKpi() {
-  const d = S[day], vis = seen(), ids = new Set(vis.map(a => a.id));
-  const act = d.actions.filter(c => ids.has(c.alarm_id));
+  const d = S[day], vis = seen();
+  const act = d.actions.filter(c => c.step <= cur);
   const auto = act.filter(c => c.auto).length;
   const raw = d.raw_cum[cur];                                  // 시점까지 실제로 발생한 임계 초과 횟수
   $('#kpi').innerHTML = [
@@ -136,34 +135,38 @@ function renderBar() {
   $('#play').textContent = playing ? '⏸ 일시정지' : done ? '↺ 다시 재생' : '▶ 재생';
   $('#play').classList.toggle('on', playing);
   $('#clock').textContent = nowT();
+  $('#bar').classList.toggle('alert', queue.length > 0);
+  $('#slow').textContent = queue.length ? `판단 대기 ${queue.length}건 · 배속 x1` : '야간 진행';
   $('#prog').style.width = (cur+1)/N()*100 + '%';
   document.querySelectorAll('#spd button').forEach(b => b.classList.toggle('on', +b.dataset.s === speed));
 }
 
 function renderHold() {
-  if (!pending) { $('#hold').innerHTML = ''; $('#hold').classList.remove('show'); return; }
-  const d = S[day], c = d.actions.find(x => x.alarm_id === pending.id);
+  if (!queue.length) { $('#hold').innerHTML = ''; $('#hold').classList.remove('show'); return; }
   $('#hold').classList.add('show');
-  $('#hold').innerHTML = `<div class="hold-in">
-    <div class="hold-h"><span class="led ${pending.grade}"></span><b>${pending.time} · ${pending.eqp} — ${pending.ko}</b>
-      <span class="pill man">자동조치 불가 · 사람 판단 대기</span></div>
-    <p><b>측정값</b> ${pending.value} &nbsp;·&nbsp; <b>필요 조치</b> ${c.act}</p>
-    <p class="why">${c.why}</p>
-    <div class="hold-b"><button data-d="승인">조치 승인하고 계속</button><button class="ghost" data-d="보류">보류하고 계속</button></div>
-  </div>`;
+  $('#hold').innerHTML = queue.map(c => {
+    const a = S[day].alarms.find(x => x.id === c.alarm_id);
+    return `<div class="hold-in">
+      <div class="hold-h"><span class="led CRIT"></span><b>${c.time} · ${c.eqp} — ${a.ko}</b>
+        <span class="pill man">${c.esc ? '자동조치 실패 · 사람 판단 대기' : '자동조치 불가 · 사람 판단 대기'}</span></div>
+      <p><b>측정값</b> ${a.value} &nbsp;·&nbsp; <b>필요 조치</b> ${c.act}</p>
+      <p class="why">${c.why}</p>
+      <div class="hold-b"><button data-k="${key(c)}" data-d="승인">조치 승인</button>
+        <button class="ghost" data-k="${key(c)}" data-d="보류">보류</button></div>
+    </div>`; }).join('');
 }
 
 function step() {
   if (cur >= N()-1) { stop(); return; }
   cur++;
-  // 이 시점에 시작하는 알람 중 사람 판단이 필요한 긴급 건이면 재생을 멈춘다
-  const hit = S[day].alarms.find(a => stepOf(a) === cur && a.grade === 'CRIT' && !decided[a.id]);
+  // 사람 판단이 필요한 긴급 건은 큐에 쌓고 배속만 x1로 낮춘다. 설비는 멈추지 않으므로 시간은 계속 간다.
+  const hits = S[day].actions.filter(c => c.step === cur && !c.auto && c.grade === 'CRIT' && !decided[key(c)]);
+  if (hits.length) { if (saved === null) saved = speed; speed = 1; queue.push(...hits); renderHold(); }
   paint();
-  if (hit) { pending = hit; pause(); renderHold(); return; }
   timer = setTimeout(step, SPEED[speed]);
 }
 function play() {
-  if (cur >= N()-1) { cur = -1; decided = {}; }
+  if (cur >= N()-1) { cur = -1; decided = {}; queue = []; saved = null; }
   playing = true; renderBar(); timer = setTimeout(step, SPEED[speed]);
 }
 function pause() { playing = false; clearTimeout(timer); renderBar(); }
@@ -183,19 +186,23 @@ function render() {
 
 // ── 초기화 ────────────────────────────────────────────
 $('#days').innerHTML = S.map((d,i) => `<button data-i="${i}"><b>${d.date.slice(5)}</b><span>${d.title}</span></button>`).join('');
-$('#spd').innerHTML = [5,20,50].map(s => `<button data-s="${s}">x${s}</button>`).join('');
+$('#spd').innerHTML = [1,5,20,50].map(s => `<button data-s="${s}">x${s}</button>`).join('');
 
 $('#days').onclick = e => { const b = e.target.closest('button'); if (!b) return;
-  stop(); day = +b.dataset.i; eqp = 0; cur = N()-1; pending = null; decided = {}; render(); };
+  stop(); day = +b.dataset.i; eqp = 0; cur = N()-1; queue = []; saved = null; decided = {}; render(); };
 $('#eqps').onclick = e => { const b = e.target.closest('button'); if (!b) return; eqp = +b.dataset.i;
   document.querySelectorAll('#eqps button').forEach((x,i) => x.classList.toggle('on', i === eqp)); renderCharts(); };
 $('#logtabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; logv = b.dataset.v;
   document.querySelectorAll('#logtabs button').forEach(x => x.classList.toggle('on', x === b)); renderLog(); };
 $('#play').onclick = () => playing ? pause() : play();
-$('#rst').onclick  = () => { stop(); cur = 0; pending = null; decided = {}; paint(); renderHold(); };
-$('#end').onclick  = () => { stop(); cur = N()-1; pending = null; paint(); renderHold(); };
-$('#spd').onclick  = e => { const b = e.target.closest('button'); if (!b) return; speed = +b.dataset.s; renderBar(); };
+$('#rst').onclick  = () => { stop(); cur = 0; queue = []; saved = null; decided = {}; paint(); renderHold(); };
+$('#end').onclick  = () => { stop(); cur = N()-1; queue = []; saved = null; paint(); renderHold(); };
+$('#spd').onclick  = e => { const b = e.target.closest('button'); if (!b) return;
+  speed = +b.dataset.s; saved = null; renderBar(); };          // 수동 변경 시 자동 복귀는 해제
 $('#hold').onclick = e => { const b = e.target.closest('button'); if (!b) return;
-  decided[pending.id] = b.dataset.d; pending = null; renderHold(); paint(); play(); };
+  decided[b.dataset.k] = b.dataset.d;
+  queue = queue.filter(c => key(c) !== b.dataset.k);
+  if (!queue.length && saved !== null) { speed = saved; saved = null; }   // 마지막 건을 처리하면 원래 배속으로
+  renderHold(); paint(); };
 
 render();

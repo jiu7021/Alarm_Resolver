@@ -23,7 +23,7 @@ INJECT = {(3,'DCS-02'): ('stuck','proc', 42, 68),      # 공정온도 고착 (�
 RULES = {
  'TWF_CRIT': dict(ko='블레이드 마모 한계', grade='CRIT', auto=False, act='설비 정지 후 블레이드 교체', why='마모 200min 이상 — 교체는 비가역 조치라 자동 실행 불가'),
  'TWF_WARN': dict(ko='블레이드 수명 임박', grade='MAJ',  auto=True,  act='주간 교체 작업 예약 등록',   why='마모 180min 도달 — 예약 등록은 설비에 영향 없음'),
- 'PWF_HIGH': dict(ko='스핀들 과전력',      grade='CRIT', auto=False, act='안전 정지 후 점검',          why='9000W 초과 — 자동 조작 시 설비 손상 위험'),
+ 'PWF_HIGH': dict(ko='스핀들 과전력',      grade='MAJ',  auto=True,  act='이송 속도 하향',             why='9000W 초과 — 과부하와 같은 부하 지표이므로 파라미터 원복으로 먼저 대응'),
  'PWF_LOW':  dict(ko='스핀들 저전력',      grade='MIN',  auto=True,  act='절삭 부하 재분배',           why='3500W 미만 — 파라미터 원복 가능'),
  'HDF':      dict(ko='절삭부 방열 불량',   grade='MIN',  auto=True,  act='냉각수 유량 증대',           why='방열 여유 8.6K 미만 — 파라미터 원복 가능'),
  'OSF':      dict(ko='스핀들 과부하',      grade='MAJ',  auto=True,  act='이송 속도 하향',             why='마모x토크 임계 초과 — 파라미터 원복 가능'),
@@ -32,6 +32,9 @@ RULES = {
 # 알람 코드가 의존하는 센서 채널 — 해당 채널이 고장나면 그 알람은 신뢰할 수 없다
 DEPS = {'HDF':{'air','proc','rpm'}, 'PWF_HIGH':{'torque','rpm'}, 'PWF_LOW':{'torque','rpm'},
         'OSF':{'torque'}, 'TWF_CRIT':set(), 'TWF_WARN':set()}
+# 조건 해제를 목적으로 하는 조치는 재확인 대상이다. 교체 예약(TWF_WARN)은 조건을 낮추는 조치가 아니므로 제외.
+RECHECK = {'HDF', 'PWF_HIGH', 'PWF_LOW', 'OSF'}
+ESC_STEP = 1        # 조치 후 다음 샘플링 주기(6분)에도 조건이 남아 있으면 조치 실패로 본다
 PRI = {'SNSR':0, 'TWF_CRIT':1, 'PWF_HIGH':2, 'TWF_WARN':3, 'OSF':4, 'HDF':5, 'PWF_LOW':6}
 
 pool = {t: te[te['Type']==t].sort_values('Tool wear').reset_index(drop=True) for t in 'LM'}
@@ -146,18 +149,31 @@ for day in range(1, DAYS+1):
             ts  = d0 + timedelta(minutes=si*STEP)
             val = {'TWF_CRIT':f'{wear[si]:.0f}min','TWF_WARN':f'{wear[si]:.0f}min','PWF_HIGH':f'{power[si]:.0f}W',
                    'PWF_LOW':f'{power[si]:.0f}W','HDF':f'{dT[si]:.1f}K','OSF':f'{os_ix[si]:.0f}minNm','SNSR':'-'}[code]
-            alarms.append(dict(id=aid, time=ts.strftime('%H:%M'), end=(d0+timedelta(minutes=ei*STEP)).strftime('%H:%M'),
+            alarms.append(dict(id=aid, step=si, endStep=ei, time=ts.strftime('%H:%M'), end=(d0+timedelta(minutes=ei*STEP)).strftime('%H:%M'),
                                eqp=eid, code=code, ko=r['ko'], grade='SNSR' if blocked else r['grade'],
                                value=val, repeat=g['root']['rep'], blocked=blocked,
                                sub=[dict(code=x['code'], ko=RULES[x['code']]['ko'], repeat=x['rep']) for x in g['sub']]))
             auto = r['auto'] and not blocked
-            actions.append(dict(alarm_id=aid, time=(ts+timedelta(minutes=STEP)).strftime('%H:%M'), eqp=eid,
+            # 자동조치 후 재확인: 조건이 다음 주기 안에 풀렸는지로 조치 효과를 판정한다
+            dur = ei - si + 1
+            esc = auto and code in RECHECK and dur > ESC_STEP
+            alarms[-1]['esc'] = esc
+            if esc: alarms[-1]['grade'] = 'CRIT'
+            actions.append(dict(alarm_id=aid, step=min(si+1, PTS-1), esc=False, time=(ts+timedelta(minutes=STEP)).strftime('%H:%M'), eqp=eid,
                                 act='자동조치 차단 — 센서 점검 후 재판정' if blocked else r['act'],
                                 auto=auto, grade='SNSR' if blocked else r['grade'],
                                 why=('의존 센서(' + ','.join(sorted(DEPS.get(code,set()) & bad_ch)) + ') 고장 — 측정값 신뢰 불가'
                                      if blocked and dep_bad else
                                      '동시간대 센서 이상 감지 — 측정값 신뢰 불가로 자동조치를 막음' if blocked else r['why']),
-                                result='조건 해제 확인' if ei < PTS-1 else '야간 종료 시점 지속'))
+                                result=('효과 없음 — 에스컬레이션' if esc else
+                                        '조건 해제 확인' if ei < PTS-1 else '야간 종료 시점 지속')))
+            if esc:
+                et = ts + timedelta(minutes=(ESC_STEP+1)*STEP)
+                actions.append(dict(alarm_id=aid, step=min(si+ESC_STEP+1, PTS-1), esc=True,
+                                    time=et.strftime('%H:%M'), eqp=eid, grade='CRIT', auto=False,
+                                    act='자동조치 실패 — 설비 점검 요청',
+                                    why=f'{r["act"]} 실행 후 {ESC_STEP*STEP}분이 지나도 조건이 해제되지 않음 — 파라미터 조정 범위 밖의 원인 추정',
+                                    result='야간 종료 시점 지속' if ei >= PTS-1 else '조건 해제 확인'))
 
         eqs.append(dict(id=eid, type=t, series=dict(
             t=[(d0+timedelta(minutes=k*STEP)).strftime('%H:%M') for k in range(PTS)],
@@ -165,16 +181,17 @@ for day in range(1, DAYS+1):
             torque=trq.round(1).tolist(), power=power.round(0).tolist(), wear=wear.round(1).tolist())))
 
     auto = sum(1 for a in actions if a['auto'])
+    esc  = sum(1 for a in actions if a.get('esc'))
     blk  = sum(1 for a in alarms  if a['blocked'])
     man  = len(actions)-auto
-    stat_all.append((day, raw_count, len(alarms), auto, man, blk))
+    stat_all.append((day, raw_count, len(alarms), auto, man, blk, esc))
     json.dump(dict(day=day, date=d0.strftime('%Y-%m-%d'), equipments=eqs, alarms=alarms, actions=actions,
                    raw_cum=np.cumsum(raw_step).tolist(),
-                   stats=dict(raw=raw_count, grouped=len(alarms), auto=auto, manual=man, blocked=blk)),
+                   stats=dict(raw=raw_count, grouped=len(alarms), auto=auto, manual=man, blocked=blk, esc=esc)),
               open(f'data/scenarios/day-{day}.json','w'), ensure_ascii=False)
 
-print(f'{"":5s}{"원시":>7s}{"집약":>6s}{"자동조치":>9s}{"사람필요":>9s}{"센서차단":>9s}   압축률')
-for d,r,g,a,m,b in stat_all:
-    print(f'day{d}{r:7d}{g:6d}{a:9d}{m:9d}{b:9d}   {(1-g/max(r,1))*100:5.1f}%')
-T=[sum(x[i] for x in stat_all) for i in range(1,6)]
-print(f'합계 {T[0]:6d}{T[1]:6d}{T[2]:9d}{T[3]:9d}{T[4]:9d}   {(1-T[1]/T[0])*100:5.1f}%')
+print(f'{"":5s}{"원시":>7s}{"집약":>6s}{"자동조치":>9s}{"사람필요":>9s}{"센서차단":>9s}{"에스컬":>8s}   압축률')
+for d,r,g,a,m,b,e in stat_all:
+    print(f'day{d}{r:7d}{g:6d}{a:9d}{m:9d}{b:9d}{e:8d}   {(1-g/max(r,1))*100:5.1f}%')
+T=[sum(x[i] for x in stat_all) for i in range(1,7)]
+print(f'합계 {T[0]:6d}{T[1]:6d}{T[2]:9d}{T[3]:9d}{T[4]:9d}{T[5]:8d}   {(1-T[1]/T[0])*100:5.1f}%')

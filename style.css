@@ -139,3 +139,8 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--mut);font-siz
 .hold-b button:hover{filter:brightness(1.12)}
 .empty{color:var(--mut);font-size:13px;padding:14px 2px;margin:0}
 @media(max-width:640px){.bar{gap:8px}.clock{order:-1}.track{order:9;flex-basis:100%}}
+
+/* 판단 대기 중 컨트롤 바 강조 */
+.bar.alert{border-color:rgba(255,82,82,.55);box-shadow:0 6px 20px rgba(255,82,82,.14)}
+.bar.alert .clock span{color:var(--crit)}
+.hold-in+.hold-in{margin-top:8px}

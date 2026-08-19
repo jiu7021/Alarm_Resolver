@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=1787179792">
 </head>
 <body>
 <header>
@@ -21,11 +21,11 @@
     <p id="brief"></p>
   </section>
 
-  <section class="bar">
+  <section class="bar" id="bar">
     <button id="play" class="play">▶ 재생</button>
     <button id="rst" class="mini" title="처음으로">↺</button>
     <button id="end" class="mini" title="끝으로">⏭</button>
-    <div class="clock"><b id="clock">22:00</b><span>야간 진행</span></div>
+    <div class="clock"><b id="clock">22:00</b><span id="slow">야간 진행</span></div>
     <div class="track"><i id="prog"></i></div>
     <nav id="spd" class="spd"></nav>
   </section>
@@ -66,29 +66,39 @@
       <tr><th>고장 유형</th><th>판정 조건</th><th>정의한 조치</th><th>자동화</th></tr>
       <tr><td>블레이드 마모 한계 (TWF)</td><td>마모 ≥ 200min</td><td>설비 정지 후 블레이드 교체</td><td class="no">불가 — 비가역</td></tr>
       <tr><td>블레이드 수명 임박 (TWF)</td><td>마모 ≥ 180min</td><td>주간 교체 작업 예약 등록</td><td class="ok">가능</td></tr>
-      <tr><td>스핀들 과전력 (PWF)</td><td>전력 &gt; 9,000W</td><td>안전 정지 후 점검</td><td class="no">불가 — 손상 위험</td></tr>
+      <tr><td>스핀들 과전력 (PWF)</td><td>전력 &gt; 9,000W</td><td>이송 속도 하향</td><td class="ok">가능</td></tr>
       <tr><td>스핀들 저전력 (PWF)</td><td>전력 &lt; 3,500W</td><td>절삭 부하 재분배</td><td class="ok">가능</td></tr>
       <tr><td>절삭부 방열 불량 (HDF)</td><td>방열 여유 &lt; 8.6K 이고 회전수 &lt; 1,380rpm</td><td>냉각수 유량 증대</td><td class="ok">가능</td></tr>
       <tr><td>스핀들 과부하 (OSF)</td><td>마모 × 토크 &gt; 11,000(L) / 12,000(M) minNm</td><td>이송 속도 하향</td><td class="ok">가능</td></tr>
       <tr><td>센서 이상 의심 (RNF·주입)</td><td>값 고착 / 열역학 위배 / 설비 간 편차 3σ 초과</td><td>자동조치 차단, 센서 점검 요청</td><td class="no">차단</td></tr>
     </table>
-    <p class="small"><b>자동화 기준은 조치의 가역성입니다.</b> 파라미터를 되돌릴 수 있으면 자동, 설비를 세워야 하거나 손상 위험이 있으면 사람이 판단합니다.
-    블레이드 마모만 2단(주의 180min / 경보 200min)인 이유도 같습니다 — 교체는 되돌릴 수 없어서 미리 준비 시간이 필요합니다.
+    <p class="small"><b>자동화 기준은 조치의 가역성입니다.</b> 파라미터를 되돌릴 수 있으면 자동, 설비를 세워야 하면 사람이 판단합니다.
+    이 기준을 일관되게 적용하면 자동조치가 불가능한 것은 <b>블레이드 교체(비가역)</b>와 <b>센서 이상(값을 믿을 수 없어 어떤 조치도 근거가 없음)</b> 둘뿐입니다.
+    과전력도 과부하와 같은 스핀들 부하 지표이므로, 설비를 세우기 전에 이송 속도 하향을 먼저 시도합니다.</p>
+    <p class="small"><b>대신 자동조치에는 재확인이 붙습니다.</b> 조건 해제를 목적으로 하는 조치는 실행 후 다음 샘플링 주기(6분)에 조건이 풀렸는지 확인하고,
+    풀리지 않았으면 <b>에스컬레이션</b>해 사람을 부릅니다. 사람을 부르는 근거가 "위험해 보여서"가 아니라 "자동으로 해봤는데 안 됐다"가 됩니다.</p>
+    <p class="small">
+<b>블레이드 마모만 2단</b>(주의 180min / 경보 200min)인 이유도 가역성입니다 — 교체는 되돌릴 수 없어서 미리 준비 시간이 필요합니다.
     실측상 <b>마모 180min 이하에서는 고장이 0건, 200~240min 구간에서 46건</b>이 발생했습니다.</p>
 
-    <h4>3. 데이터 분할과 검증</h4>
+    <h4>3. 재생 동작</h4>
+    <p>야간 600분을 6분 간격 100스텝으로 재생합니다. 사람 판단이 필요한 긴급 건이 나와도 <b>재생은 멈추지 않습니다</b> —
+    실제 설비는 사람이 판단하는 동안에도 계속 돌아가기 때문입니다. 대신 <b>배속이 자동으로 x1로 떨어지고</b> 판단 대기 큐에 쌓이며,
+    처리하면 원래 배속으로 돌아갑니다. 판단하지 않고 두면 야간이 그대로 끝나고 미조치로 남습니다.</p>
+
+    <h4>4. 데이터 분할과 검증</h4>
     <p>고장이 3.39%로 희소해 <b>층화 추출로 학습 70% : 검증 30%</b>로 나눴습니다(seed=42 고정, 재현 가능).
     이 화면의 시계열은 전부 <b>학습에 쓰이지 않은 검증셋 3,000행</b>에서 생성했습니다.
     정상군의 ±3σ 관리한계를 알람 임계로 쓰려 했으나, 이 데이터의 고장 조건은 통계적 이상치가 아니라 물리 조건으로 정의돼 있어
     <b>3σ가 실제 경보보다 바깥에 놓여 조기경보 역할을 하지 못했습니다</b>(예: 방열 여유 −3σ = 7.1K vs 경보 8.6K).
     그래서 3σ는 알람 임계에서 빼고 <b>설비 간 센서 편차 판정</b>에만 사용했습니다.</p>
 
-    <h4>4. AI가 하는 일과 하지 않는 일</h4>
+    <h4>5. AI가 하는 일과 하지 않는 일</h4>
     <p><b>판정과 조치 결정은 AI가 하지 않습니다.</b> 임계 판정, 자동조치 가부, 센서 이상 판정은 전부 결정론적 룰엔진이 처리합니다.
     LLM은 위의 <span class="tag sm">AI 생성 브리핑</span>과 조치 사유 서술만 담당합니다.
     설비 조작을 LLM에 맡기면 환각으로 오조치가 나고, 같은 입력에 다른 출력이 나와 재현이 안 되며, 감사 추적이 불가능하기 때문입니다.</p>
 
-    <h4>5. 가정치</h4>
+    <h4>6. 가정치</h4>
     <ul class="small">
       <li><b>시간축 재구성</b> — 원본은 로트 단위 독립 스냅샷이라 타임스탬프가 없습니다. 단조 누적되는 유일한 변수인 블레이드 마모를 시간축으로 삼아 정렬 배치했고, 나머지 센서값은 해당 행의 실측값을 평활화 없이 그대로 씁니다.</li>
       <li><b>마모 진행 속도</b> — 야간 600분 동안 40min 진행한다고 가정했습니다. 제품 1개당 가공 사이클 타임이 원본에 없어 실제 시간 환산이 불가능합니다.</li>
@@ -100,7 +110,7 @@
 </main>
 
 <footer class="wrap"><p>데이터 출처: Matzka, S. — AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository</p></footer>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=1787179792"></script>
+<script src="app.js?v=1787179792"></script>
 </body>
 </html>
