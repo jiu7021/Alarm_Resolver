@@ -101,3 +101,41 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--mut);font-siz
   .row{grid-template-columns:auto 52px 1fr;gap:8px}
   .row .r{grid-column:2/4;text-align:left;margin-top:2px}
 }
+
+/* 재생 컨트롤 */
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.play{background:var(--info);color:#0b1410;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;
+  font:inherit;font-size:13px;font-weight:700;transition:.12s;white-space:nowrap}
+.play:hover{filter:brightness(1.1)}
+.play.on{background:var(--maj);color:#1a1206}
+.mini{background:transparent;border:1px solid var(--line);color:var(--mut);width:34px;height:34px;
+  border-radius:8px;cursor:pointer;font-size:14px;transition:.12s}
+.mini:hover{color:var(--fg);border-color:#556}
+.clock{display:flex;flex-direction:column;line-height:1.15;padding:0 4px}
+.clock b{font-size:16px;font-variant-numeric:tabular-nums}
+.clock span{font-size:10px;color:var(--mut)}
+.track{flex:1;min-width:120px;height:5px;background:#0d1117;border-radius:3px;overflow:hidden}
+.track i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--snsr),var(--info));transition:width .12s linear}
+.spd{display:flex;gap:4px}
+.spd button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:6px 10px;
+  border-radius:7px;cursor:pointer;font:inherit;font-size:12px;transition:.12s}
+.spd button.on{background:var(--card);border-color:#556;color:var(--fg)}
+
+/* 사람 판단 대기 */
+.hold{display:none}
+.hold.show{display:block;margin-bottom:14px}
+.hold-in{background:rgba(255,82,82,.07);border:1px solid rgba(255,82,82,.4);border-radius:12px;padding:16px 18px;
+  animation:pop .18s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.hold-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px;font-size:14px}
+.hold-in p{margin:4px 0;font-size:13px;color:#c7ccd6}
+.hold-in .why{color:var(--mut);font-size:12.5px}
+.hold-b{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.hold-b button{background:var(--crit);color:#fff;border:none;padding:9px 16px;border-radius:8px;
+  cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+.hold-b button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut)}
+.hold-b button:hover{filter:brightness(1.12)}
+.empty{color:var(--mut);font-size:13px;padding:14px 2px;margin:0}
+@media(max-width:640px){.bar{gap:8px}.clock{order:-1}.track{order:9;flex-basis:100%}}

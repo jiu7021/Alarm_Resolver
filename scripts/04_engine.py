@@ -62,6 +62,7 @@ for day in range(1, DAYS+1):
     d0 = BASE + timedelta(days=day-1)
     eqs, alarms, actions = [], [], []
     raw_count = 0
+    raw_step = np.zeros(PTS, int)      # 시점별 원시 알람 수
 
     # --- 1패스: 3대 시계열을 먼저 생성한다 (설비 간 교차검증에 필요) ---
     raw = {}
@@ -114,6 +115,7 @@ for day in range(1, DAYS+1):
               'HDF'     : (dT<8.6)&(rpm<1380),
               'SNSR'    : sensor_bad}
         raw_count += int(sum(m.sum() for m in ch.values()))
+        for m in ch.values(): raw_step += m.astype(int)
 
         ev=[]
         for code, m in ch.items():
@@ -167,6 +169,7 @@ for day in range(1, DAYS+1):
     man  = len(actions)-auto
     stat_all.append((day, raw_count, len(alarms), auto, man, blk))
     json.dump(dict(day=day, date=d0.strftime('%Y-%m-%d'), equipments=eqs, alarms=alarms, actions=actions,
+                   raw_cum=np.cumsum(raw_step).tolist(),
                    stats=dict(raw=raw_count, grouped=len(alarms), auto=auto, manual=man, blocked=blk)),
               open(f'data/scenarios/day-{day}.json','w'), ensure_ascii=False)
 
