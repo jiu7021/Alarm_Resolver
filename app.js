@@ -234,7 +234,7 @@ function paint() { paintTabs(); renderCharts(); renderLog(); renderKpi(); render
 function paintTabs() {
   $('#eqps').innerHTML = S[day].equipments.map((e,i) =>
     `<button class="${i===eqp?'on':''}${halt[e.id]?' halted':''}" data-i="${i}">${e.id}
-      <span style="opacity:.6">(${e.type}등급)</span>${halt[e.id]?'<b class="stopdot">정지 중</b>':''}</button>`).join('');
+      <span style="opacity:.6">${e.type}급 제품 가공</span>${halt[e.id]?'<b class="stopdot">정지 중</b>':''}</button>`).join('');
 }
 function render() {
   const d = S[day];

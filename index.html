@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인</title>
-<link rel="stylesheet" href="style.css?v=1787181662">
+<link rel="stylesheet" href="style.css?v=1787182484">
 </head>
 <body>
 <header>
@@ -58,6 +58,12 @@
     실제 설비에서 수집한 기록이 아니라 <b>밀링 머신의 거동을 모사해 생성한 공개 합성 데이터</b>입니다.
     설비 명칭만 P&amp;T 다이싱 공정으로 각색했으며, 밀링과 다이싱은 모두 고속 회전 공구로 재료를 절삭하는 동종 설비입니다.
     센서 5종(공기온도·공정온도·회전속도·토크·공구마모)과 고장 유형 5종이 라벨로 들어 있습니다.</p>
+    <p class="small"><b>값의 범위는 원본 그대로입니다.</b> 회전수 1,168~2,886rpm은 밀링 머신의 범위이며,
+    실제 다이싱 스핀들은 이보다 한 자릿수 이상 높게 돕니다. 임계 판정 논리를 보이는 것이 목적이라 값을 실제 범위로 옮기지 않았습니다.
+    옮기면 데이터셋 문서에 검증된 임계 조건을 그대로 쓸 수 없게 되고, 그때부터는 전부 제가 지어낸 숫자가 됩니다.</p>
+    <p class="small"><b>L·M·H는 설비 등급이 아니라 그 설비가 가공하는 제품의 품질 등급</b>입니다(원본의 Type).
+    등급이 높을수록 공구 마모가 빠르고(제품 1개당 L 2min / M 3min / H 5min), 과부하 임계도 달라집니다(11,000 / 12,000 / 13,000 minNm).
+    검증셋에 H급이 298행뿐이라 L·L·M 3대로 구성했습니다.</p>
 
     <h4>2. 알람 이력이 없어 무엇을 조치로 정의했는가</h4>
     <p>팹의 알람 로그와 조치 이력이 짝지어진 공개 데이터는 존재하지 않습니다. 그래서 <b>데이터셋에 라벨로 들어 있는 고장 유형 5종을 알람으로 삼고, 각 유형에 대응하는 조치를 정의</b>했습니다.
@@ -128,7 +134,7 @@
 </main>
 
 <footer class="wrap"><p>데이터 출처: Matzka, S. — AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository</p></footer>
-<script src="data.js?v=1787181662"></script>
-<script src="app.js?v=1787181662"></script>
+<script src="data.js?v=1787182484"></script>
+<script src="app.js?v=1787182484"></script>
 </body>
 </html>
