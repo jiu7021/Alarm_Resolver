@@ -10,7 +10,7 @@ const SPEED = {1:2000, 5:400, 20:100, 50:40};   // 배속 -> 1스텝(6분) 표�
 let day = 0, eqp = 0, logv = 'alarm';
 let cur = 99, playing = false, speed = 20, timer = null;
 let queue = [], saved = null;                   // 판단 대기 큐 / 강등 전 배속
-let live = {}, dIdx = {}, halt = {}, alarmAt = {};
+let live = {}, dIdx = {}, halt = {}, alarmAt = {}, wearOff = {}, replaced = {};
 const STEP_MIN = 6;                             // 1스텝 = 6분
 const TAU = 12;                                 // 정지 후 공정온도 냉각 시정수 [min] (가정치)
 let decided = {};                               // 사람이 판단한 조치: key -> '승인' | '보류'
@@ -26,7 +26,7 @@ function resetLive() {
   live = {}; dIdx = {}; halt = {}; alarmAt = {};
   S[day].equipments.forEach(e => {
     live[e.id] = {air:[], proc:[], rpm:[], torque:[], power:[], wear:[], halt:[]};
-    dIdx[e.id] = -1; halt[e.id] = false;
+    dIdx[e.id] = -1; halt[e.id] = false; wearOff[e.id] = 0; replaced[e.id] = false;
   });
 }
 function stepLive(k) {
@@ -43,12 +43,17 @@ function stepLive(k) {
     } else {
       const i = Math.min(++dIdx[e.id], s.air.length-1);
       L.air.push(s.air[i]); L.proc.push(s.proc[i]); L.rpm.push(s.rpm[i]);
-      L.torque.push(s.torque[i]); L.power.push(s.power[i]); L.wear.push(s.wear[i]);
+      L.torque.push(s.torque[i]); L.power.push(s.power[i]);
+      L.wear.push(+(s.wear[i] + wearOff[e.id]).toFixed(1));
       L.halt.push(0);
     }
   });
   // 이번 스텝에 새로 드러난 알람의 화면 위치(시계 기준)를 기록한다
-  S[day].alarms.forEach(a => { if (alarmAt[a.id] === undefined && dIdx[a.eqp] >= a.step) alarmAt[a.id] = k; });
+  S[day].alarms.forEach(a => {
+    if (alarmAt[a.id] !== undefined || dIdx[a.eqp] < a.step) return;
+    if (replaced[a.eqp] && a.code.startsWith('TWF')) return;      // 교체 후 마모 알람은 무효
+    alarmAt[a.id] = k;
+  });
 }
 function fillAll() { resetLive(); for (let k = 0; k < N(); k++) stepLive(k); }
 const haltSteps = () => S[day].equipments.reduce((t,e) => t + (live[e.id] ? live[e.id].halt.reduce((x,y)=>x+y,0) : 0), 0);
@@ -77,7 +82,8 @@ function chart({label, unit, series, limits = [], marks = [], fills = [], base})
   shown.forEach(l => { const y = Y(l.v);
     g += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="${l.c}" stroke-width="1" stroke-dasharray="3 3" opacity=".75"/>`
        + `<text x="${W-PR}" y="${y-3}" fill="${l.c}" font-size="9" text-anchor="end" opacity=".9">${l.t}</text>`; });
-  series.forEach(s => g += `<path d="${line(s.v)}" fill="none" stroke="${s.c}" stroke-width="${s.dyn?1:1.4}"${s.dyn?' stroke-dasharray="4 3" opacity=".8"':''}/>`);
+  series.forEach(s => { if (s.dyn) s = {...s, v: s.v.map(v => Math.min(Math.max(v, lo), hi))};
+    g += `<path d="${line(s.v)}" fill="none" stroke="${s.c}" stroke-width="${s.dyn?1:1.4}"${s.dyn?' stroke-dasharray="4 3" opacity=".8"':''}/>`; });
 
   if (c < n-1) {                                              // 재생 커서
     const x = X(c);
@@ -180,7 +186,8 @@ function renderBar() {
   $('#play').classList.toggle('on', playing);
   $('#clock').textContent = nowT();
   $('#bar').classList.toggle('alert', queue.length > 0);
-  $('#slow').textContent = queue.length ? `판단 대기 ${queue.length}건 · 배속 x1` : '야간 진행';
+  const hl = S[day].equipments.filter(e => halt[e.id]).map(e => e.id);
+  $('#slow').textContent = hl.length ? `${hl.join(', ')} 정지 중 · 배속 x1` : '야간 진행';
   $('#prog').style.width = (cur+1)/N()*100 + '%';
   document.querySelectorAll('#spd button').forEach(b => b.classList.toggle('on', +b.dataset.s === speed));
 }
@@ -222,16 +229,20 @@ function play() {
 function pause() { playing = false; clearTimeout(timer); renderBar(); }
 function stop()  { playing = false; clearTimeout(timer); renderBar(); }
 
-function paint() { renderCharts(); renderLog(); renderKpi(); renderBar(); }
+function paint() { paintTabs(); renderCharts(); renderLog(); renderKpi(); renderBar(); }
 
+function paintTabs() {
+  $('#eqps').innerHTML = S[day].equipments.map((e,i) =>
+    `<button class="${i===eqp?'on':''}${halt[e.id]?' halted':''}" data-i="${i}">${e.id}
+      <span style="opacity:.6">(${e.type}등급)</span>${halt[e.id]?'<b class="stopdot">정지 중</b>':''}</button>`).join('');
+}
 function render() {
   const d = S[day];
   if (!live[d.equipments[0].id]) fillAll();
   document.querySelectorAll('#days button').forEach((b,i) => b.classList.toggle('on', i === day));
   $('#title').textContent = `${d.date} · ${d.title}`;
   $('#brief').textContent = d.brief;
-  $('#eqps').innerHTML = d.equipments.map((e,i) =>
-    `<button class="${i===eqp?'on':''}" data-i="${i}">${e.id} <span style="opacity:.6">(${e.type}등급)</span></button>`).join('');
+  paintTabs();
   renderHold(); paint();
 }
 
@@ -253,10 +264,20 @@ $('#spd').onclick  = e => { const b = e.target.closest('button'); if (!b) return
 $('#hold').onclick = e => { const b = e.target.closest('button'); if (!b) return;
   const c = queue.find(x => key(x) === b.dataset.k);
   decided[b.dataset.k] = b.dataset.d;
-  if (b.dataset.d === '승인' && c) halt[c.eqp] = false;      // 조치 완료 -> 재가동
+  if (b.dataset.d === '승인' && c) {
+    halt[c.eqp] = false;                                          // 조치 완료 -> 재가동
+    const a = S[day].alarms.find(x => x.id === c.alarm_id);
+    if (a && a.code === 'TWF_CRIT') {                             // 블레이드 교체 -> 마모 0부터 재누적
+      const e = S[day].equipments.find(x => x.id === c.eqp);
+      wearOff[c.eqp] = -e.series.wear[Math.max(dIdx[c.eqp], 0)];
+      replaced[c.eqp] = true;
+    }
+  }
   queue = queue.filter(x => key(x) !== b.dataset.k);
   if (!queue.length && saved !== null) { speed = saved; saved = null; }   // 마지막 건을 처리하면 원래 배속으로
   renderHold(); paint(); };
 
+// 검증용 상태 조회 훅 (개발자 도구에서 __state() 호출)
+window.__state = () => ({cur, live, dIdx, halt, wearOff, replaced, queue, speed});
 fillAll();
 render();

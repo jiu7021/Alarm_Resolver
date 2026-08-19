@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인</title>
-<link rel="stylesheet" href="style.css?v=1787180736">
+<link rel="stylesheet" href="style.css?v=1787181662">
 </head>
 <body>
 <header>
@@ -112,13 +112,23 @@
       <li><b>마모 진행 속도</b> — 야간 600분 동안 40min 진행한다고 가정했습니다. 제품 1개당 가공 사이클 타임이 원본에 없어 실제 시간 환산이 불가능합니다.</li>
       <li><b>센서 고장</b> — 원본에 센서 고장 라벨이 없어 값 고착과 편류를 인위적으로 주입했습니다.</li>
       <li><b>설비 구성</b> — H등급은 검증셋에 298행뿐이라 제외하고 L·L·M 3대로 구성했습니다.</li>
+      <li><b>블레이드 교체</b> — 교체를 승인하면 마모가 0부터 다시 누적됩니다. 새 블레이드이므로 이후 마모 알람은 발생하지 않습니다.</li>
       <li><b>조치 효과</b> — 조치 후 그래프를 보정하지 않습니다. 조치와 정상 복귀 사이의 인과는 원본이 독립 스냅샷이라 검증할 수 없어, 이력의 "조건 해제"는 데이터상 조건이 풀린 시점만을 뜻합니다.</li>
     </ul>
+
+    <h4>7. 연계 프로젝트</h4>
+    <p class="small">이 시뮬레이터의 자동조치 중 <b>냉각수 유량 증대</b>가 실제 설비 단에서 어떻게 동작하는지를 다룬 별도 프로젝트입니다.
+    여기서는 "유량을 올렸다"는 판정까지만 다루고, 그 아래 제어 루프는 아래 링크에 있습니다.</p>
+    <a class="linkbox" href="https://jiu7021.github.io/pcw-hmi/" target="_blank" rel="noopener">
+      <b>PCW 냉각수 제어 시뮬레이터</b>
+      <span>PLC 제어 로직과 SCADA/HMI 화면 구성을 웹으로 구현한 공정 냉각수(Process Cooling Water) 제어 시스템</span>
+      <u>jiu7021.github.io/pcw-hmi &nearr;</u>
+    </a>
   </section>
 </main>
 
 <footer class="wrap"><p>데이터 출처: Matzka, S. — AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository</p></footer>
-<script src="data.js?v=1787180736"></script>
-<script src="app.js?v=1787180736"></script>
+<script src="data.js?v=1787181662"></script>
+<script src="app.js?v=1787181662"></script>
 </body>
 </html>

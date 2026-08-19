@@ -144,3 +144,14 @@ footer{border-top:1px solid var(--line);padding:18px 0;color:var(--mut);font-siz
 .bar.alert{border-color:rgba(255,82,82,.55);box-shadow:0 6px 20px rgba(255,82,82,.14)}
 .bar.alert .clock span{color:var(--crit)}
 .hold-in+.hold-in{margin-top:8px}
+
+/* 정지 중인 설비 표시 */
+.tabs button.halted{border-color:rgba(255,82,82,.55);color:var(--fg)}
+.stopdot{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;
+  background:rgba(255,82,82,.18);color:var(--crit)}
+.linkbox{display:block;background:var(--card2);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;margin-top:10px;text-decoration:none;transition:.12s}
+.linkbox:hover{border-color:#556}
+.linkbox b{display:block;color:var(--fg);font-size:14px;margin-bottom:3px}
+.linkbox span{color:var(--mut);font-size:12.5px}
+.linkbox u{color:var(--snsr);text-decoration:none;font-size:12px}
