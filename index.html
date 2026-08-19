@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>야간 알람 자동조치 시뮬레이터</h1>
+    <p class="sub">P&amp;T 다이싱 라인 · 22:00–07:54 무인 조업 구간</p>
+    <nav id="days" class="days"></nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="brief">
+    <div class="brief-head"><span class="tag">AI 생성 브리핑</span><h2 id="title"></h2></div>
+    <p id="brief"></p>
+  </section>
+
+  <section id="kpi" class="kpi"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>센서 트렌드</h3>
+      <nav id="eqps" class="tabs sm"></nav>
+    </div>
+    <div id="charts"></div>
+  </section>
+
+  <section class="panel">
+    <nav id="logtabs" class="tabs">
+      <button class="on" data-v="alarm">알람 이력 <span id="na"></span></button>
+      <button data-v="action">조치 이력 <span id="nc"></span></button>
+    </nav>
+    <div id="log"></div>
+  </section>
+
+  <section class="notes">
+    <h3>이 시뮬레이터에 대하여</h3>
+
+    <h4>1. 사용한 데이터</h4>
+    <p><b>AI4I 2020 Predictive Maintenance Dataset</b> (UCI Machine Learning Repository, id=601) · 10,000행 × 14열.
+    실제 설비에서 수집한 기록이 아니라 <b>밀링 머신의 거동을 모사해 생성한 공개 합성 데이터</b>입니다.
+    설비 명칭만 P&amp;T 다이싱 공정으로 각색했으며, 밀링과 다이싱은 모두 고속 회전 공구로 재료를 절삭하는 동종 설비입니다.
+    센서 5종(공기온도·공정온도·회전속도·토크·공구마모)과 고장 유형 5종이 라벨로 들어 있습니다.</p>
+
+    <h4>2. 알람 이력이 없어 무엇을 조치로 정의했는가</h4>
+    <p>팹의 알람 로그와 조치 이력이 짝지어진 공개 데이터는 존재하지 않습니다. 그래서 <b>데이터셋에 라벨로 들어 있는 고장 유형 5종을 알람으로 삼고, 각 유형에 대응하는 조치를 정의</b>했습니다.
+    임계값은 제가 정한 것이 아니라 데이터셋 문서에 명시된 발생 조건이며, 검증 결과 <b>방열 불량·전력 이상·과부하 세 유형은 실제 라벨과 100% 일치</b>했습니다.</p>
+    <table class="tb">
+      <tr><th>고장 유형</th><th>판정 조건</th><th>정의한 조치</th><th>자동화</th></tr>
+      <tr><td>블레이드 마모 한계 (TWF)</td><td>마모 ≥ 200min</td><td>설비 정지 후 블레이드 교체</td><td class="no">불가 — 비가역</td></tr>
+      <tr><td>블레이드 수명 임박 (TWF)</td><td>마모 ≥ 180min</td><td>주간 교체 작업 예약 등록</td><td class="ok">가능</td></tr>
+      <tr><td>스핀들 과전력 (PWF)</td><td>전력 &gt; 9,000W</td><td>안전 정지 후 점검</td><td class="no">불가 — 손상 위험</td></tr>
+      <tr><td>스핀들 저전력 (PWF)</td><td>전력 &lt; 3,500W</td><td>절삭 부하 재분배</td><td class="ok">가능</td></tr>
+      <tr><td>절삭부 방열 불량 (HDF)</td><td>방열 여유 &lt; 8.6K 이고 회전수 &lt; 1,380rpm</td><td>냉각수 유량 증대</td><td class="ok">가능</td></tr>
+      <tr><td>스핀들 과부하 (OSF)</td><td>마모 × 토크 &gt; 11,000(L) / 12,000(M) minNm</td><td>이송 속도 하향</td><td class="ok">가능</td></tr>
+      <tr><td>센서 이상 의심 (RNF·주입)</td><td>값 고착 / 열역학 위배 / 설비 간 편차 3σ 초과</td><td>자동조치 차단, 센서 점검 요청</td><td class="no">차단</td></tr>
+    </table>
+    <p class="small"><b>자동화 기준은 조치의 가역성입니다.</b> 파라미터를 되돌릴 수 있으면 자동, 설비를 세워야 하거나 손상 위험이 있으면 사람이 판단합니다.
+    블레이드 마모만 2단(주의 180min / 경보 200min)인 이유도 같습니다 — 교체는 되돌릴 수 없어서 미리 준비 시간이 필요합니다.
+    실측상 <b>마모 180min 이하에서는 고장이 0건, 200~240min 구간에서 46건</b>이 발생했습니다.</p>
+
+    <h4>3. 데이터 분할과 검증</h4>
+    <p>고장이 3.39%로 희소해 <b>층화 추출로 학습 70% : 검증 30%</b>로 나눴습니다(seed=42 고정, 재현 가능).
+    이 화면의 시계열은 전부 <b>학습에 쓰이지 않은 검증셋 3,000행</b>에서 생성했습니다.
+    정상군의 ±3σ 관리한계를 알람 임계로 쓰려 했으나, 이 데이터의 고장 조건은 통계적 이상치가 아니라 물리 조건으로 정의돼 있어
+    <b>3σ가 실제 경보보다 바깥에 놓여 조기경보 역할을 하지 못했습니다</b>(예: 방열 여유 −3σ = 7.1K vs 경보 8.6K).
+    그래서 3σ는 알람 임계에서 빼고 <b>설비 간 센서 편차 판정</b>에만 사용했습니다.</p>
+
+    <h4>4. AI가 하는 일과 하지 않는 일</h4>
+    <p><b>판정과 조치 결정은 AI가 하지 않습니다.</b> 임계 판정, 자동조치 가부, 센서 이상 판정은 전부 결정론적 룰엔진이 처리합니다.
+    LLM은 위의 <span class="tag sm">AI 생성 브리핑</span>과 조치 사유 서술만 담당합니다.
+    설비 조작을 LLM에 맡기면 환각으로 오조치가 나고, 같은 입력에 다른 출력이 나와 재현이 안 되며, 감사 추적이 불가능하기 때문입니다.</p>
+
+    <h4>5. 가정치</h4>
+    <ul class="small">
+      <li><b>시간축 재구성</b> — 원본은 로트 단위 독립 스냅샷이라 타임스탬프가 없습니다. 단조 누적되는 유일한 변수인 블레이드 마모를 시간축으로 삼아 정렬 배치했고, 나머지 센서값은 해당 행의 실측값을 평활화 없이 그대로 씁니다.</li>
+      <li><b>마모 진행 속도</b> — 야간 600분 동안 40min 진행한다고 가정했습니다. 제품 1개당 가공 사이클 타임이 원본에 없어 실제 시간 환산이 불가능합니다.</li>
+      <li><b>센서 고장</b> — 원본에 센서 고장 라벨이 없어 값 고착과 편류를 인위적으로 주입했습니다.</li>
+      <li><b>설비 구성</b> — H등급은 검증셋에 298행뿐이라 제외하고 L·L·M 3대로 구성했습니다.</li>
+      <li><b>조치 효과</b> — 조치 후 그래프를 보정하지 않습니다. 조치와 정상 복귀 사이의 인과는 원본이 독립 스냅샷이라 검증할 수 없어, 이력의 "조건 해제"는 데이터상 조건이 풀린 시점만을 뜻합니다.</li>
+    </ul>
+  </section>
+</main>
+
+<footer class="wrap"><p>데이터 출처: Matzka, S. — AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository</p></footer>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

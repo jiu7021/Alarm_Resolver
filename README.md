@@ -1,0 +1,41 @@
+# 야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인
+
+야간 무인 조업 구간(22:00–07:54)에 쌓인 설비 알람을 근본원인으로 집약하고,
+**조치의 가역성**을 기준으로 자동조치 가부를 판정하는 시뮬레이터.
+
+**배포:** (Vercel URL)
+
+## 핵심 설계
+
+| 단계 | 내용 |
+|---|---|
+| 1. 조건별 독립 채널 판정 | 마모·전력·과부하·방열을 배타적 상태가 아닌 독립 채널로 판정 |
+| 2. 채터링 억제 | 연속 동일 상태를 1건으로 집약, 18분 이내 재발은 디바운스로 병합 |
+| 3. 센서 헬스 게이트 | 값 고착 / 열역학 위배 / 설비 간 편차 3σ 초과 → **자동조치 차단** |
+| 4. 상관 그룹핑 | 물리적으로 종속인 알람(마모↑ → 과부하↑)을 근본원인 1건으로 |
+| 5. 조치 분기 | 가역 조치만 자동, 비가역·손상 위험은 사람 |
+
+**판정은 전부 결정론적 룰엔진.** LLM은 브리핑 서술만 담당하며 판정에 개입하지 않는다.
+
+결과: 원시 알람 423건 → 근본원인 70건(83.5% 압축), 자동조치 35건, 센서 이상 차단 9건.
+
+## 데이터
+
+[AI4I 2020 Predictive Maintenance Dataset](https://archive.ics.uci.edu/dataset/601) (UCI, id=601).
+실제 설비 기록이 아니라 밀링 머신 거동을 모사한 **공개 합성 데이터**이며, 설비 명칭만 P&T 다이싱 공정으로 각색했다.
+
+문서에 명시된 고장 조건을 검증한 결과 방열 불량·전력 이상·과부하는 실제 라벨과 **재현율 100%**로 일치했다.
+정상군 ±3σ를 알람 임계로 쓰려 했으나 3σ가 실제 경보보다 바깥에 놓여(방열 여유 −3σ=7.1K vs 경보 8.6K)
+조기경보 역할을 못 해 폐기하고, 설비 간 센서 편차 판정에만 사용했다.
+
+## 재현
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install ucimlrepo pandas scikit-learn
+SSL_CERT_FILE=$(.venv/bin/python -c "import certifi;print(certifi.where())") \
+  .venv/bin/python -c "from ucimlrepo import fetch_ucirepo; import pandas as pd; d=fetch_ucirepo(id=601); \
+  pd.concat([d.data.features,d.data.targets],axis=1).to_csv('data/ai4i2020.csv',index=False)"
+.venv/bin/python scripts/01_threshold.py   # 층화분할 70:30, 관리한계 산출
+.venv/bin/python scripts/04_engine.py      # 판정 엔진 -> data/scenarios/*.json
+.venv/bin/python scripts/05_bundle.py      # -> data.js
+```

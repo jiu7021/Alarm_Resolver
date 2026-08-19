@@ -1,0 +1,103 @@
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#0e1116; --card:#171b22; --card2:#1e232c; --line:#2a303b;
+  --fg:#e6e9ef; --mut:#8b94a3;
+  --crit:#ff5252; --maj:#ff9f40; --min:#ffd23f; --snsr:#4dabf7; --info:#51cf66;
+}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid var(--line);padding:28px 0 0;background:linear-gradient(180deg,#131820,var(--bg))}
+h1{margin:0;font-size:26px;letter-spacing:-.02em}
+.sub{margin:6px 0 18px;color:var(--mut);font-size:14px}
+h2{margin:0;font-size:17px}
+h3{margin:0 0 14px;font-size:15px;color:var(--mut);font-weight:600;letter-spacing:.04em}
+h4{margin:26px 0 8px;font-size:15px}
+
+/* 날짜 선택 */
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:14px;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.days button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--mut);
+  padding:9px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;transition:.12s;text-align:left}
+.days button:hover{border-color:#3d4553;color:var(--fg)}
+.days button.on{background:var(--card2);border-color:#556;color:var(--fg)}
+.days button b{display:block;font-size:12px;font-weight:600}
+.days button span{font-size:11px;opacity:.65}
+
+main{padding:24px 0 60px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+
+/* 브리핑 */
+.brief{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--snsr);
+  border-radius:12px;padding:18px;margin-bottom:18px}
+.brief-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.tag{background:rgba(77,171,247,.14);color:var(--snsr);font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:5px;letter-spacing:.02em;white-space:nowrap}
+.tag.sm{display:inline-block;vertical-align:middle}
+.brief p{margin:0;color:#c7ccd6;font-size:14px}
+
+/* KPI */
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.kpi div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.kpi b{display:block;font-size:26px;font-weight:650;letter-spacing:-.02em;line-height:1.2}
+.kpi span{font-size:12px;color:var(--mut)}
+.kpi small{font-size:11px;color:var(--mut);opacity:.8}
+
+/* 탭 */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tabs button{background:transparent;border:1px solid var(--line);color:var(--mut);padding:7px 13px;
+  border-radius:7px;cursor:pointer;font:inherit;font-size:13px;transition:.12s}
+.tabs button:hover{color:var(--fg)}
+.tabs button.on{background:var(--card2);border-color:#556;color:var(--fg)}
+.tabs.sm{margin:0}
+
+/* 차트 */
+.ch{margin-bottom:6px;padding:10px 0 4px;border-top:1px solid var(--line)}
+.ch:first-child{border-top:none}
+.ch-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.ch-head b{font-size:13px;font-weight:600}
+.ch-head em{font-style:normal;font-size:11px;color:var(--mut)}
+.ch svg{display:block;width:100%;height:auto}
+
+/* 이력 */
+.row{display:grid;grid-template-columns:auto 62px 1fr auto;gap:10px;align-items:baseline;
+  padding:10px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.row:last-child{border-bottom:none}
+.led{width:9px;height:9px;border-radius:50%;align-self:center;box-shadow:0 0 7px currentColor}
+.led.CRIT{background:var(--crit);color:var(--crit)}
+.led.MAJ{background:var(--maj);color:var(--maj)}
+.led.MIN{background:var(--min);color:var(--min)}
+.led.SNSR{background:var(--snsr);color:var(--snsr)}
+.led.INFO{background:var(--info);color:var(--info)}
+.tm{color:var(--mut);font-variant-numeric:tabular-nums;font-size:12px}
+.row .t b{font-weight:600}
+.row .t i{font-style:normal;color:var(--mut);font-size:12px;margin-left:6px}
+.row .t p{margin:3px 0 0;color:var(--mut);font-size:12px}
+.row .r{text-align:right;font-size:12px;color:var(--mut);white-space:nowrap}
+.pill{display:inline-block;padding:2px 7px;border-radius:5px;font-size:11px;font-weight:600}
+.pill.auto{background:rgba(81,207,102,.14);color:var(--info)}
+.pill.man{background:rgba(255,82,82,.14);color:var(--crit)}
+.pill.blk{background:rgba(77,171,247,.14);color:var(--snsr)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-bottom:12px}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+
+/* 설명 */
+.notes{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.notes p{color:#b9bfca;font-size:13.5px}
+.notes b{color:var(--fg)}
+.small{font-size:12.5px !important;color:var(--mut) !important}
+.notes ul{padding-left:18px;margin:8px 0}
+.notes li{margin-bottom:5px}
+.tb{width:100%;border-collapse:collapse;font-size:12.5px;margin:10px 0;display:block;overflow-x:auto;white-space:nowrap}
+.tb th{text-align:left;color:var(--mut);font-weight:600;border-bottom:1px solid var(--line);padding:7px 12px 7px 0}
+.tb td{padding:7px 12px 7px 0;border-bottom:1px solid var(--line);color:#b9bfca}
+.tb .ok{color:var(--info)}
+.tb .no{color:var(--crit)}
+footer{border-top:1px solid var(--line);padding:18px 0;color:var(--mut);font-size:12px}
+@media(max-width:640px){
+  .wrap{padding:0 14px} h1{font-size:21px}
+  .row{grid-template-columns:auto 52px 1fr;gap:8px}
+  .row .r{grid-column:2/4;text-align:left;margin-top:2px}
+}
