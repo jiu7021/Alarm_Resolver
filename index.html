@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인</title>
-<link rel="stylesheet" href="style.css?v=1787182484">
+<link rel="stylesheet" href="style.css?v=1787271152">
 </head>
 <body>
 <header>
@@ -112,7 +112,15 @@
     LLM은 위의 <span class="tag sm">AI 생성 브리핑</span>과 조치 사유 서술만 담당합니다.
     설비 조작을 LLM에 맡기면 환각으로 오조치가 나고, 같은 입력에 다른 출력이 나와 재현이 안 되며, 감사 추적이 불가능하기 때문입니다.</p>
 
-    <h4>6. 가정치</h4>
+    <h4>6. 학습 모델은 물리 규칙을 찾아내는가</h4>
+    <p>AI4I는 본래 <b>설명가능 AI(XAI) 연구용</b> 데이터셋입니다. 그래서 판정 룰과 별개로,
+    학습셋 7,000행에 결정트리를 학습시켜 <b>모델이 물리 규칙을 스스로 복원하는지</b> 확인했습니다.
+    두 조건을 비교합니다 — <b>원본 센서 5종만</b> 준 경우와, <b>물리 파생변수</b>(방열 여유 = 공정온도−공기온도, 전력 = 토크×각속도, 과부하 = 마모×토크)를
+    함께 준 경우입니다. 성능은 모두 검증셋 3,000행 기준입니다.</p>
+    <div id="tree"></div>
+    <p class="small" id="treeNote"></p>
+
+    <h4>7. 가정치</h4>
     <ul class="small">
       <li><b>시간축 재구성</b> — 원본은 로트 단위 독립 스냅샷이라 타임스탬프가 없습니다. 단조 누적되는 유일한 변수인 블레이드 마모를 시간축으로 삼아 정렬 배치했고, 나머지 센서값은 해당 행의 실측값을 평활화 없이 그대로 씁니다.</li>
       <li><b>마모 진행 속도</b> — 야간 600분 동안 40min 진행한다고 가정했습니다. 제품 1개당 가공 사이클 타임이 원본에 없어 실제 시간 환산이 불가능합니다.</li>
@@ -122,7 +130,7 @@
       <li><b>조치 효과</b> — 조치 후 그래프를 보정하지 않습니다. 조치와 정상 복귀 사이의 인과는 원본이 독립 스냅샷이라 검증할 수 없어, 이력의 "조건 해제"는 데이터상 조건이 풀린 시점만을 뜻합니다.</li>
     </ul>
 
-    <h4>7. 연계 프로젝트</h4>
+    <h4>8. 연계 프로젝트</h4>
     <p class="small">이 시뮬레이터의 자동조치 중 <b>냉각수 유량 증대</b>가 실제 설비 단에서 어떻게 동작하는지를 다룬 별도 프로젝트입니다.
     여기서는 "유량을 올렸다"는 판정까지만 다루고, 그 아래 제어 루프는 아래 링크에 있습니다.</p>
     <a class="linkbox" href="https://jiu7021.github.io/pcw-hmi/" target="_blank" rel="noopener">
@@ -134,7 +142,7 @@
 </main>
 
 <footer class="wrap"><p>데이터 출처: Matzka, S. — AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository</p></footer>
-<script src="data.js?v=1787182484"></script>
-<script src="app.js?v=1787182484"></script>
+<script src="data.js?v=1787271152"></script>
+<script src="app.js?v=1787271152"></script>
 </body>
 </html>

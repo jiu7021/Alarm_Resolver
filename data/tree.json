@@ -1,0 +1,246 @@
+[
+ {
+  "code": "HDF",
+  "doc": "방열여유 < 8.6K 이고 회전수 < 1380rpm",
+  "raw": {
+   "precision": 46.8,
+   "recall": 88.1,
+   "tree": "|--- Rotational speed <= 1379.50\n|   |--- Air temperature <= 301.55\n|   |   |--- Torque <= 62.35\n|   |   |   |--- class: 0\n|   |   |--- Torque >  62.35\n|   |   |   |--- Torque <= 62.45\n|   |   |   |   |--- class: 1\n|   |   |   |--- Torque >  62.45\n|   |   |   |   |--- class: 0\n|   |--- Air temperature >  301.55\n|   |   |--- Process temperature <= 312.05\n|   |   |   |--- Torque <= 43.75\n|   |   |   |   |--- class: 0\n|   |   |   |--- Torque >  43.75\n|   |   |   |   |--- class: 1\n|   |   |--- Process temperature >  312.05\n|   |   |   |--- class: 0\n|--- Rotational speed >  1379.50\n|   |--- class: 0",
+   "splits": [
+    [
+     "Rotational speed",
+     1379.5
+    ],
+    [
+     "Air temperature",
+     301.6
+    ],
+    [
+     "Torque",
+     62.4
+    ],
+    [
+     "Torque",
+     62.5
+    ],
+    [
+     "Process temperature",
+     312.1
+    ],
+    [
+     "Torque",
+     43.8
+    ]
+   ]
+  },
+  "der": {
+   "precision": 90.9,
+   "recall": 95.2,
+   "tree": "|--- dT <= 8.65\n|   |--- Rotational speed <= 1380.00\n|   |   |--- Process temperature <= 312.05\n|   |   |   |--- class: 1\n|   |   |--- Process temperature >  312.05\n|   |   |   |--- class: 0\n|   |--- Rotational speed >  1380.00\n|   |   |--- class: 0\n|--- dT >  8.65\n|   |--- class: 0",
+   "splits": [
+    [
+     "dT",
+     8.7
+    ],
+    [
+     "Rotational speed",
+     1380.0
+    ],
+    [
+     "Process temperature",
+     312.1
+    ]
+   ]
+  }
+ },
+ {
+  "code": "PWF",
+  "doc": "전력 < 3500W 또는 > 9000W",
+  "raw": {
+   "precision": 35.3,
+   "recall": 78.3,
+   "tree": "|--- Torque <= 59.15\n|   |--- Torque <= 15.40\n|   |   |--- Air temperature <= 304.05\n|   |   |   |--- Torque <= 13.45\n|   |   |   |   |--- class: 1\n|   |   |   |--- Torque >  13.45\n|   |   |   |   |--- class: 1\n|   |   |--- Air temperature >  304.05\n|   |   |   |--- Tool wear <= 96.50\n|   |   |   |   |--- class: 0\n|   |   |   |--- Tool wear >  96.50\n|   |   |   |   |--- class: 0\n|   |--- Torque >  15.40\n|   |   |--- Rotational speed <= 1219.00\n|   |   |   |--- class: 0\n|   |   |--- Rotational speed >  1219.00\n|   |   |   |--- class: 0\n|--- Torque >  59.15\n|   |--- Torque <= 62.45\n|   |   |--- Rotational speed <= 1403.50\n|   |   |   |--- Tool wear <= 6.00\n|   |   |   |   |--- class: 0\n|   |   |   |--- Tool wear >  6.00\n|   |   |   |   |--- class: 0\n|   |   |--- Rotational speed >  1403.50\n|   |   |   |--- Air temperature <= 298.35\n|   |   |   |   |--- class: 0\n|   |   |   |--- Air temperature >  298.35\n|   |   |   |   |--- class: 1\n|   |--- Torque >  62.45\n|   |   |--- Rotational speed <= 1196.00\n|   |   |   |--- class: 0\n|   |   |--- Rotational speed >  1196.00\n|   |   |   |--- Torque <= 65.15\n|   |   |   |   |--- class: 1\n|   |   |   |--- Torque >  65.15\n|   |   |   |   |--- class: 1",
+   "splits": [
+    [
+     "Torque",
+     59.1
+    ],
+    [
+     "Torque",
+     15.4
+    ],
+    [
+     "Air temperature",
+     304.0
+    ],
+    [
+     "Torque",
+     13.4
+    ],
+    [
+     "Tool wear",
+     96.5
+    ],
+    [
+     "Rotational speed",
+     1219.0
+    ],
+    [
+     "Torque",
+     62.5
+    ],
+    [
+     "Rotational speed",
+     1403.5
+    ],
+    [
+     "Tool wear",
+     6.0
+    ],
+    [
+     "Air temperature",
+     298.3
+    ],
+    [
+     "Rotational speed",
+     1196.0
+    ],
+    [
+     "Torque",
+     65.1
+    ]
+   ]
+  },
+  "der": {
+   "precision": 100.0,
+   "recall": 100.0,
+   "tree": "|--- Power <= 9000.54\n|   |--- Power <= 3496.14\n|   |   |--- class: 1\n|   |--- Power >  3496.14\n|   |   |--- Tool wear <= 1.00\n|   |   |   |--- class: 0\n|   |   |--- Tool wear >  1.00\n|   |   |   |--- class: 0\n|--- Power >  9000.54\n|   |--- dT <= 7.75\n|   |   |--- class: 1\n|   |--- dT >  7.75\n|   |   |--- class: 1",
+   "splits": [
+    [
+     "Power",
+     9000.5
+    ],
+    [
+     "Power",
+     3496.1
+    ],
+    [
+     "Tool wear",
+     1.0
+    ],
+    [
+     "dT",
+     7.8
+    ]
+   ]
+  }
+ },
+ {
+  "code": "OSF",
+  "doc": "마모 x 토크 > 등급별 임계(11000/12000/13000)",
+  "raw": {
+   "precision": 27.3,
+   "recall": 88.9,
+   "tree": "|--- Torque <= 50.15\n|   |--- Tool wear <= 225.50\n|   |   |--- class: 0\n|   |--- Tool wear >  225.50\n|   |   |--- Torque <= 46.15\n|   |   |   |--- class: 0\n|   |   |--- Torque >  46.15\n|   |   |   |--- Torque <= 49.15\n|   |   |   |   |--- class: 1\n|   |   |   |--- Torque >  49.15\n|   |   |   |   |--- class: 0\n|--- Torque >  50.15\n|   |--- Tool wear <= 171.50\n|   |   |--- class: 0\n|   |--- Tool wear >  171.50\n|   |   |--- Process temperature <= 307.60\n|   |   |   |--- class: 0\n|   |   |--- Process temperature >  307.60\n|   |   |   |--- Rotational speed <= 1462.00\n|   |   |   |   |--- class: 1\n|   |   |   |--- Rotational speed >  1462.00\n|   |   |   |   |--- class: 0",
+   "splits": [
+    [
+     "Torque",
+     50.1
+    ],
+    [
+     "Tool wear",
+     225.5
+    ],
+    [
+     "Torque",
+     46.1
+    ],
+    [
+     "Torque",
+     49.1
+    ],
+    [
+     "Tool wear",
+     171.5
+    ],
+    [
+     "Process temperature",
+     307.6
+    ],
+    [
+     "Rotational speed",
+     1462.0
+    ]
+   ]
+  },
+  "der": {
+   "precision": 78.8,
+   "recall": 96.3,
+   "tree": "|--- OS <= 10998.50\n|   |--- Process temperature <= 305.75\n|   |   |--- class: 0\n|   |--- Process temperature >  305.75\n|   |   |--- class: 0\n|--- OS >  10998.50\n|   |--- Tool wear <= 166.50\n|   |   |--- class: 0\n|   |--- Tool wear >  166.50\n|   |   |--- dT <= 11.45\n|   |   |   |--- class: 1\n|   |   |--- dT >  11.45\n|   |   |   |--- class: 0",
+   "splits": [
+    [
+     "OS",
+     10998.5
+    ],
+    [
+     "Process temperature",
+     305.8
+    ],
+    [
+     "Tool wear",
+     166.5
+    ],
+    [
+     "dT",
+     11.4
+    ]
+   ]
+  }
+ },
+ {
+  "code": "TWF",
+  "doc": "마모 200~240min",
+  "raw": {
+   "precision": 4.9,
+   "recall": 69.2,
+   "tree": "|--- Tool wear <= 202.50\n|   |--- class: 0\n|--- Tool wear >  202.50\n|   |--- Rotational speed <= 1363.00\n|   |   |--- class: 0\n|   |--- Rotational speed >  1363.00\n|   |   |--- Air temperature <= 296.85\n|   |   |   |--- class: 0\n|   |   |--- Air temperature >  296.85\n|   |   |   |--- Torque <= 48.10\n|   |   |   |   |--- class: 1\n|   |   |   |--- Torque >  48.10\n|   |   |   |   |--- class: 1",
+   "splits": [
+    [
+     "Tool wear",
+     202.5
+    ],
+    [
+     "Rotational speed",
+     1363.0
+    ],
+    [
+     "Air temperature",
+     296.8
+    ],
+    [
+     "Torque",
+     48.1
+    ]
+   ]
+  },
+  "der": {
+   "precision": 4.9,
+   "recall": 69.2,
+   "tree": "|--- Tool wear <= 202.50\n|   |--- class: 0\n|--- Tool wear >  202.50\n|   |--- Rotational speed <= 1363.00\n|   |   |--- class: 0\n|   |--- Rotational speed >  1363.00\n|   |   |--- Air temperature <= 296.85\n|   |   |   |--- class: 0\n|   |   |--- Air temperature >  296.85\n|   |   |   |--- class: 1",
+   "splits": [
+    [
+     "Tool wear",
+     202.5
+    ],
+    [
+     "Rotational speed",
+     1363.0
+    ],
+    [
+     "Air temperature",
+     296.8
+    ]
+   ]
+  }
+ }
+]

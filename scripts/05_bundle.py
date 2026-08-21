@@ -21,7 +21,9 @@ for f in sorted(glob.glob('data/scenarios/day-*.json'), key=lambda x:int(x.split
     j['title'], j['brief'] = TITLE[d], BRIEF[d]
     days.append(j)
 
-open('data.js','w').write('window.SCENARIOS=' + json.dumps(days, ensure_ascii=False, separators=(',',':')) + ';')
+tree = json.load(open('data/tree.json'))
+open('data.js','w').write('window.SCENARIOS=' + json.dumps(days, ensure_ascii=False, separators=(',',':')) + ';\n'
+                          'window.TREE=' + json.dumps(tree, ensure_ascii=False, separators=(',',':')) + ';')
 # 정적 자산 캐시 무효화: index.html의 버전 쿼리를 갱신한다
 import os, re, time
 v = str(int(time.time()))

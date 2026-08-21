@@ -246,6 +246,37 @@ function render() {
   renderHold(); paint();
 }
 
+// ── 학습 모델 검증 표 ─────────────────────────────────
+function renderTree() {
+  const T = window.TREE; if (!T || !$('#tree')) return;
+  const KO = {HDF:'절삭부 방열 불량', PWF:'스핀들 전력 이상', OSF:'스핀들 과부하', TWF:'블레이드 마모'};
+  const VAR = {'dT':['방열 여유','K'], 'Power':['전력','W'], 'OS':['과부하 지표','minNm'],
+               'Tool wear':['마모','min'], 'Torque':['토크','Nm'], 'Rotational speed':['회전수','rpm'],
+               'Air temperature':['공기온도','K'], 'Process temperature':['공정온도','K']};
+  const fmt = sp => sp.slice(0,2).map(([f,v]) => {
+    const [ko,u] = VAR[f] || [f,'']; return `${ko} ${v.toLocaleString()}${u}`; }).join(' · ');
+  $('#tree').innerHTML = `<table class="tb">
+    <tr><th>고장 유형</th><th>문서에 정의된 규칙</th><th>원본 센서만<br><span style="opacity:.6">정밀도 / 재현율</span></th>
+        <th>물리 파생변수 포함<br><span style="opacity:.6">정밀도 / 재현율</span></th><th>모델이 찾은 분기</th></tr>` +
+    T.map(r => {
+      const win = r.der.precision - r.raw.precision;
+      return `<tr><td>${KO[r.code]} (${r.code})</td><td>${r.doc}</td>
+        <td>${r.raw.precision}% / ${r.raw.recall}%</td>
+        <td class="${win > 20 ? 'ok' : ''}">${r.der.precision}% / ${r.der.recall}%</td>
+        <td>${fmt(r.der.splits)}</td></tr>`; }).join('') + '</table>';
+  const pwf = T.find(r => r.code === 'PWF'), hdf = T.find(r => r.code === 'HDF');
+  $('#treeNote').innerHTML =
+    `<b>결과가 세 가지를 말해 줍니다.</b> 첫째, 원본 센서만으로는 어떤 유형도 제대로 잡지 못합니다(정밀도 27~47%).
+     둘째, 물리 파생변수를 넣어 주면 모델이 <b>문서에 적힌 임계값을 그대로 찾아냅니다</b> —
+     전력은 ${pwf.der.splits[0][1].toLocaleString()}W와 ${pwf.der.splits[1][1].toLocaleString()}W로 분기해 문서의 9,000W·3,500W와 일치하고(정밀도 ${pwf.der.precision}%),
+     방열은 ${hdf.der.splits[0][1]}K·${hdf.der.splits[1][1].toLocaleString()}rpm으로 문서의 8.6K·1,380rpm과 일치합니다.
+     <b>도메인 지식이 모델 성능을 만든 것이지 모델이 스스로 물리를 안 것이 아닙니다.</b>
+     셋째, 블레이드 마모만 정밀도가 4.9%로 남습니다 — 마모 200min을 넘긴 790건 중 실제 고장은 46건뿐이라
+     <b>확률적 사건이라 어떤 모델로도 시점을 맞출 수 없습니다.</b> 그래서 마모는 예측이 아니라 180min 조기 개입으로 다룹니다.
+     <br><br>모델이 복원한 규칙이 문서 규칙과 일치하므로, <b>운영 판정은 학습 모델이 아니라 검증 가능한 룰로 갑니다.</b>
+     모델은 룰이 타당한지 확인하는 데 썼습니다.`;
+}
+
 // ── 초기화 ────────────────────────────────────────────
 $('#days').innerHTML = S.map((d,i) => `<button data-i="${i}"><b>${d.date.slice(5)}</b><span>${d.title}</span></button>`).join('');
 $('#spd').innerHTML = [1,5,20,50].map(s => `<button data-s="${s}">x${s}</button>`).join('');
@@ -281,3 +312,4 @@ $('#hold').onclick = e => { const b = e.target.closest('button'); if (!b) return
 window.__state = () => ({cur, live, dIdx, halt, wearOff, replaced, queue, speed});
 fillAll();
 render();
+renderTree();
