@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>야간 알람 자동조치 시뮬레이터 — P&T 다이싱 라인</title>
-<link rel="stylesheet" href="style.css?v=1787271152">
+<link rel="stylesheet" href="style.css?v=1787476522">
 </head>
 <body>
 <header>
   <div class="wrap">
     <h1>야간 알람 자동조치 시뮬레이터</h1>
-    <p class="sub">P&amp;T 다이싱 라인 · 22:00–07:54 무인 조업 구간</p>
+    <p class="sub">P&amp;T 다이싱 라인 · 22:00–07:54 야간 조업 구간</p>
     <nav id="days" class="days"></nav>
   </div>
 </header>
@@ -71,7 +71,7 @@
     <table class="tb">
       <tr><th>고장 유형</th><th>판정 조건</th><th>정의한 조치</th><th>자동화</th></tr>
       <tr><td>블레이드 마모 한계 (TWF)</td><td>마모 ≥ 200min</td><td>설비 정지 후 블레이드 교체</td><td class="no">불가 — 비가역</td></tr>
-      <tr><td>블레이드 수명 임박 (TWF)</td><td>마모 ≥ 180min</td><td>주간 교체 작업 예약 등록</td><td class="ok">가능</td></tr>
+      <tr><td>블레이드 수명 임박 (TWF)</td><td>마모 ≥ 180min</td><td>계획 정비 교체 예약 등록</td><td class="ok">가능</td></tr>
       <tr><td>스핀들 과전력 (PWF)</td><td>전력 &gt; 9,000W</td><td>이송 속도 하향</td><td class="ok">가능</td></tr>
       <tr><td>스핀들 저전력 (PWF)</td><td>전력 &lt; 3,500W</td><td>절삭 부하 재분배</td><td class="ok">가능</td></tr>
       <tr><td>절삭부 방열 불량 (HDF)</td><td>방열 여유 &lt; 8.6K 이고 회전수 &lt; 1,380rpm</td><td>냉각수 유량 증대</td><td class="ok">가능</td></tr>
@@ -91,6 +91,9 @@
     <p>야간 600분을 6분 간격 100스텝으로 재생합니다. 사람 판단이 필요한 긴급 건이 나와도 <b>시계는 멈추지 않습니다</b> —
     실제 야간은 사람이 판단하는 동안에도 흘러가기 때문입니다. 대신 <b>배속이 자동으로 x1로 떨어지고</b> 판단 대기 큐에 쌓이며,
     처리하면 원래 배속으로 돌아갑니다.</p>
+    <p>중요·주의 등급은 자동 처리하고 이력에 기록만 남깁니다. 당직자를 직접 부르는 것은
+    <b>설비 정지를 수반하거나 자동조치가 실패한 긴급 건</b>으로 한정했습니다.
+    알람 전량을 사람이 확인하는 대신, 확인해야 할 건수를 줄이는 것이 이 설계의 목적입니다.</p>
     <p><b>긴급 건은 해당 설비를 정지시킵니다.</b> 정지 중 센서값은 물리적으로 결정됩니다 —
     구동이 멈추므로 회전수와 부하 토크가 0, 따라서 소비전력도 0(P = T·ω)이 되고,
     발열원이 사라진 공정온도는 공기온도 쪽으로 지수 감쇠하며, 가공이 멈췄으므로 블레이드 마모는 그 값에서 누적을 멈춥니다.
@@ -142,7 +145,7 @@
 </main>
 
 <footer class="wrap"><p>데이터 출처: Matzka, S. — AI4I 2020 Predictive Maintenance Dataset, UCI Machine Learning Repository</p></footer>
-<script src="data.js?v=1787271152"></script>
-<script src="app.js?v=1787271152"></script>
+<script src="data.js?v=1787476522"></script>
+<script src="app.js?v=1787476522"></script>
 </body>
 </html>

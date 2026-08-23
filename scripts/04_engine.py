@@ -22,7 +22,7 @@ INJECT = {(3,'DCS-02'): ('stuck','proc', 42, 68),      # 공정온도 고착 (�
 
 RULES = {
  'TWF_CRIT': dict(ko='블레이드 마모 한계', grade='CRIT', auto=False, act='설비 정지 후 블레이드 교체', why='마모 200min 이상 — 교체는 비가역 조치라 자동 실행 불가'),
- 'TWF_WARN': dict(ko='블레이드 수명 임박', grade='MAJ',  auto=True,  act='주간 교체 작업 예약 등록',   why='마모 180min 도달 — 예약 등록은 설비에 영향 없음'),
+ 'TWF_WARN': dict(ko='블레이드 수명 임박', grade='MAJ',  auto=True,  act='계획 정비 교체 예약 등록',   why='마모 180min 도달 — 예약 등록은 설비에 영향 없음'),
  'PWF_HIGH': dict(ko='스핀들 과전력',      grade='MAJ',  auto=True,  act='이송 속도 하향',             why='9000W 초과 — 과부하와 같은 부하 지표이므로 파라미터 원복으로 먼저 대응'),
  'PWF_LOW':  dict(ko='스핀들 저전력',      grade='MIN',  auto=True,  act='절삭 부하 재분배',           why='3500W 미만 — 파라미터 원복 가능'),
  'HDF':      dict(ko='절삭부 방열 불량',   grade='MIN',  auto=True,  act='냉각수 유량 증대',           why='방열 여유 8.6K 미만 — 파라미터 원복 가능'),
