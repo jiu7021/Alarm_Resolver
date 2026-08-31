@@ -22,11 +22,11 @@ for f in sorted(glob.glob('data/scenarios/day-*.json'), key=lambda x:int(x.split
     days.append(j)
 
 tree = json.load(open('data/tree.json'))
-open('data.js','w').write('window.SCENARIOS=' + json.dumps(days, ensure_ascii=False, separators=(',',':')) + ';\n'
+open('docs/data.js','w').write('window.SCENARIOS=' + json.dumps(days, ensure_ascii=False, separators=(',',':')) + ';\n'
                           'window.TREE=' + json.dumps(tree, ensure_ascii=False, separators=(',',':')) + ';')
 # 정적 자산 캐시 무효화: index.html의 버전 쿼리를 갱신한다
 import os, re, time
 v = str(int(time.time()))
-h = re.sub(r'\?v=\d+', '?v='+v, open('index.html').read())
-open('index.html','w').write(h)
-print(f'data.js 생성  {os.path.getsize("data.js")/1024:.0f} KB  ({len(days)}일)  캐시버전 {v}')
+h = re.sub(r'\?v=\d+', '?v='+v, open('docs/index.html').read())
+open('docs/index.html','w').write(h)
+print(f'data.js 생성  {os.path.getsize("docs/data.js")/1024:.0f} KB  ({len(days)}일)  캐시버전 {v}')

@@ -3,7 +3,11 @@
 야간 조업 구간(22:00–07:54)에 쌓인 설비 알람을 근본원인으로 집약하고,
 **조치의 가역성**을 기준으로 자동조치 가부를 판정하는 시뮬레이터.
 
-**배포:** (Vercel URL)
+**프로젝트 기록** https://jiu7021.github.io/Alarm_Resolver/project.html — 문제·가설·결과·한계
+**시뮬레이터** https://jiu7021.github.io/Alarm_Resolver/ — 야간 조업 재생
+
+> GitHub Pages 소스는 `docs/` 폴더다. `docs/index.html` 이 시뮬레이터,
+> `docs/project.html` 이 프로젝트 기록 페이지다.
 
 ## 핵심 설계
 
@@ -57,5 +61,6 @@ SSL_CERT_FILE=$(.venv/bin/python -c "import certifi;print(certifi.where())") \
 .venv/bin/python scripts/01_threshold.py   # 층화분할 70:30, 관리한계 산출
 .venv/bin/python scripts/04_engine.py      # 판정 엔진 -> data/scenarios/*.json
 .venv/bin/python scripts/06_tree.py        # 결정트리 검증 -> data/tree.json
-.venv/bin/python scripts/05_bundle.py      # -> data.js
+.venv/bin/python scripts/05_bundle.py      # -> docs/data.js
+.venv/bin/python scripts/07_figures.py     # 대시보드용 그림 -> docs/img/
 ```
