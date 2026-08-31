@@ -3,7 +3,14 @@ const S = window.SCENARIOS;
 const $ = s => document.querySelector(s);
 
 const GRADE_KO = {CRIT:'긴급', MAJ:'중요', MIN:'주의', SNSR:'센서의심', INFO:'정보'};
-const COL = {CRIT:'#ff5252', MAJ:'#ff9f40', MIN:'#ffd23f', SNSR:'#4dabf7', INFO:'#51cf66'};
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let COL = {}, C = {};
+function loadColors() {
+  COL = {CRIT:cssv('--bad'), MAJ:cssv('--warn'), MIN:cssv('--min'), SNSR:cssv('--accent'), INFO:cssv('--ok')};
+  C = {ink:cssv('--ink'), mut:cssv('--ink-40'), bad:cssv('--bad'), warn:cssv('--warn'),
+       min:cssv('--min'), accent:cssv('--accent')};
+}
+loadColors();
 const OSLIM = {L:11000, M:12000};
 const SPEED = {1:2000, 5:400, 20:100, 50:40};   // 배속 -> 1스텝(6분) 표시 간격 [ms]
 
@@ -87,13 +94,13 @@ function chart({label, unit, series, limits = [], marks = [], fills = [], base})
 
   if (c < n-1) {                                              // 재생 커서
     const x = X(c);
-    g += `<line x1="${x}" y1="${PT}" x2="${x}" y2="${H-PB}" stroke="#e6e9ef" stroke-width="1" opacity=".5"/>`;
+    g += `<line x1="${x}" y1="${PT}" x2="${x}" y2="${H-PB}" stroke="${C.ink}" stroke-width="1" opacity=".45"/>`;
     series.filter(s => !s.dyn).forEach(s => g += `<circle cx="${x}" cy="${Y(s.v[c])}" r="2.4" fill="${s.c}"/>`);
   }
-  g += `<text x="${PL-6}" y="${Y(hi)+8}" fill="#8b94a3" font-size="9" text-anchor="end">${hi.toFixed(0)}</text>`
-     + `<text x="${PL-6}" y="${Y(lo)}" fill="#8b94a3" font-size="9" text-anchor="end">${lo.toFixed(0)}</text>`;
+  g += `<text x="${PL-6}" y="${Y(hi)+8}" fill="${C.mut}" font-size="9" text-anchor="end">${hi.toFixed(0)}</text>`
+     + `<text x="${PL-6}" y="${Y(lo)}" fill="${C.mut}" font-size="9" text-anchor="end">${lo.toFixed(0)}</text>`;
   [0,.25,.5,.75,1].forEach(f => { const i = Math.round(f*(n-1));
-    g += `<text x="${X(i)}" y="${H-3}" fill="#8b94a3" font-size="9" text-anchor="${f===0?'start':f===1?'end':'middle'}">${series[0].t[i]}</text>`; });
+    g += `<text x="${X(i)}" y="${H-3}" fill="${C.mut}" font-size="9" text-anchor="${f===0?'start':f===1?'end':'middle'}">${series[0].t[i]}</text>`; });
 
   const leg = series.filter(s => s.name).map(s => `<span style="color:${s.c}">■</span> ${s.name}`).join(' &nbsp;');
   return `<div class="ch"><div class="ch-head"><b>${label}</b><em>${leg} &nbsp;${unit}</em></div>
@@ -105,23 +112,23 @@ function renderCharts() {
   const my = d.alarms.filter(a => a.eqp === e.id && alarmAt[a.id] !== undefined);
   const marks = my.map(a => [alarmAt[a.id], COL[a.grade]]);
   const fills = [];
-  L.halt.forEach((h,i) => { if (h) fills.push([i, i+1, '#ff5252']); });      // 정지 구간
+  L.halt.forEach((h,i) => { if (h) fills.push([i, i+1, C.bad]); });      // 정지 구간
   const hot = L.proc.map((p,i) => !L.halt[i] && (p - L.air[i]) < 8.6 && L.rpm[i] < 1380 ? i : -1).filter(i => i >= 0);
   const stopped = L.halt.some(h => h);
   const bs = arr => stopped ? arr.concat([0]) : arr;                 // 정지가 있으면 0을 스케일에 포함
 
   $('#charts').innerHTML = [
     chart({label:'절삭부 온도', unit:'[K] · 두 선의 간격이 방열 여유', series:[
-      {t:s.t, v:L.proc, c:'#ff9f40', name:'공정온도'}, {t:s.t, v:L.air, c:'#4dabf7', name:'공기온도'}],
-      base: s.proc.concat(s.air), fills: fills.concat(hot.map(i => [i, i+1, '#ffd23f'])), marks}),
-    chart({label:'스핀들 회전수', unit:'[rpm]', series:[{t:s.t, v:L.rpm, c:'#e6e9ef'}],
-      limits:[{v:1380, c:'#ffd23f', t:'1380 방열 판정선'}], base: bs(s.rpm), marks, fills}),
+      {t:s.t, v:L.proc, c:C.warn, name:'공정온도'}, {t:s.t, v:L.air, c:C.accent, name:'공기온도'}],
+      base: s.proc.concat(s.air), fills: fills.concat(hot.map(i => [i, i+1, C.min])), marks}),
+    chart({label:'스핀들 회전수', unit:'[rpm]', series:[{t:s.t, v:L.rpm, c:C.ink}],
+      limits:[{v:1380, c:C.min, t:'1380 방열 판정선'}], base: bs(s.rpm), marks, fills}),
     chart({label:'스핀들 부하 토크', unit:'[Nm] · 점선은 마모에 따라 내려가는 허용 한계', series:[
-      {t:s.t, v:L.torque, c:'#e6e9ef'}, {t:s.t, v:L.wear.map(w => lim/Math.max(w,1)), c:'#ff9f40', dyn:1, name:'허용 한계'}], base: bs(s.torque), marks, fills}),
-    chart({label:'스핀들 소비전력', unit:'[W]', series:[{t:s.t, v:L.power, c:'#e6e9ef'}],
-      limits:[{v:9000, c:'#ff5252', t:'9000 상한'}, {v:3500, c:'#ffd23f', t:'3500 하한'}], base: bs(s.power), marks, fills}),
-    chart({label:'블레이드 마모 누적', unit:'[min]', series:[{t:s.t, v:L.wear, c:'#e6e9ef'}],
-      limits:[{v:200, c:'#ff5252', t:'200 경보'}, {v:180, c:'#ff9f40', t:'180 주의'}], base: s.wear, marks, fills}),
+      {t:s.t, v:L.torque, c:C.ink}, {t:s.t, v:L.wear.map(w => lim/Math.max(w,1)), c:C.warn, dyn:1, name:'허용 한계'}], base: bs(s.torque), marks, fills}),
+    chart({label:'스핀들 소비전력', unit:'[W]', series:[{t:s.t, v:L.power, c:C.ink}],
+      limits:[{v:9000, c:C.bad, t:'9000 상한'}, {v:3500, c:C.min, t:'3500 하한'}], base: bs(s.power), marks, fills}),
+    chart({label:'블레이드 마모 누적', unit:'[min]', series:[{t:s.t, v:L.wear, c:C.ink}],
+      limits:[{v:200, c:C.bad, t:'200 경보'}, {v:180, c:C.warn, t:'180 주의'}], base: s.wear, marks, fills}),
   ].join('');
 }
 
@@ -177,7 +184,8 @@ function renderKpi() {
     ['사람 확인 필요', act.length - auto, '비가역·손상 위험'],
     ['센서 이상 차단', vis.filter(a => a.blocked).length, '오조치 방지'],
     ['정지 손실', hs*STEP_MIN + '분', hs ? '판단 대기 중 생산 중단' : '정지 없음'],
-  ].map(([k,v,s]) => `<div><span>${k}</span><b>${v}</b><small>${s}</small></div>`).join('');
+  ].map(([k,v,sb],i) => `<div class="kpi${i===0?' tint':i===1?' tint-2':''}">
+       <div class="kpi-lab">${k}</div><div class="kpi-val">${v}</div><div class="kpi-sub">${sb}</div></div>`).join('');
 }
 
 function renderBar() {
@@ -239,8 +247,10 @@ function paintTabs() {
 function render() {
   const d = S[day];
   if (!live[d.equipments[0].id]) fillAll();
-  document.querySelectorAll('#days button').forEach((b,i) => b.classList.toggle('on', i === day));
+  document.querySelectorAll('#days button, #days-m button').forEach(b =>
+    b.classList.toggle('on', +b.dataset.i === day));
   $('#title').textContent = `${d.date} · ${d.title}`;
+  const bd = $('#daybadge'); if (bd) bd.textContent = `${d.date.slice(5)} ${d.title}`;
   $('#brief').textContent = d.brief;
   paintTabs();
   renderHold(); paint();
@@ -278,11 +288,16 @@ function renderTree() {
 }
 
 // ── 초기화 ────────────────────────────────────────────
-$('#days').innerHTML = S.map((d,i) => `<button data-i="${i}"><b>${d.date.slice(5)}</b><span>${d.title}</span></button>`).join('');
+const dayHTML = cls => S.map((d,i) =>
+  `<button class="${cls}" data-i="${i}"><b>${d.date.slice(5)}</b><span>${d.title}</span></button>`).join('');
+$('#days').innerHTML = dayHTML('rail-row day');
+$('#days-m').innerHTML = dayHTML('');
 $('#spd').innerHTML = [1,5,20,50].map(s => `<button data-s="${s}">x${s}</button>`).join('');
 
-$('#days').onclick = e => { const b = e.target.closest('button'); if (!b) return;
+const pickDay = e => { const b = e.target.closest('button'); if (!b) return;
   stop(); day = +b.dataset.i; eqp = 0; cur = N()-1; queue = []; saved = null; decided = {}; fillAll(); render(); };
+$('#days').onclick = pickDay;
+$('#days-m').onclick = pickDay;
 $('#eqps').onclick = e => { const b = e.target.closest('button'); if (!b) return; eqp = +b.dataset.i;
   document.querySelectorAll('#eqps button').forEach((x,i) => x.classList.toggle('on', i === eqp)); renderCharts(); };
 $('#logtabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; logv = b.dataset.v;
@@ -309,6 +324,7 @@ $('#hold').onclick = e => { const b = e.target.closest('button'); if (!b) return
   renderHold(); paint(); };
 
 // 검증용 상태 조회 훅 (개발자 도구에서 __state() 호출)
+window.addEventListener('resize', () => { loadColors(); if (live[S[day].equipments[0].id]) paint(); });
 window.__state = () => ({cur, live, dIdx, halt, wearOff, replaced, queue, speed});
 fillAll();
 render();
