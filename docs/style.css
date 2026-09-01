@@ -93,6 +93,12 @@
 .kv .ok{color:var(--ok);font-weight:600}
 .kv .bad{color:var(--bad);font-weight:600}
 
+/* ── 사이드바 아이콘 ─────────────────────────────── */
+svg.ri{width:18px;height:18px;margin:0 11px 0 2px;flex:none;background:none;border-radius:0;
+  stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.65}
+.rail-row.on svg.ri{opacity:1}
+.rail-row:hover svg.ri{opacity:.9}
+
 /* ── 레일의 날짜 항목 ────────────────────────────── */
 .rail-row.day{display:flex;flex-direction:column;align-items:flex-start;gap:1px;
   background:none;border:none;width:100%;font:inherit;text-align:left;cursor:pointer}
@@ -112,8 +118,9 @@
   padding:11px 16px;border-radius:var(--radius-8);cursor:pointer;font:inherit;text-align:left;
   transition:all var(--dur-fast) var(--ease)}
 .daybar button:hover{color:var(--ink)}
-.daybar button.on{background:var(--ink);color:var(--surface-page)}
-.daybar button.on span{opacity:.75}
+.daybar button.on,.daybar button.on b,.daybar button.on span{color:var(--surface-page)}
+.daybar button.on{background:var(--ink)}
+.daybar button.on span{opacity:.8}
 .daybar button b{font-size:13.5px;font-weight:600;line-height:19px}
 .daybar button span{font-size:11.5px;opacity:.72;line-height:16px;white-space:nowrap}
 
