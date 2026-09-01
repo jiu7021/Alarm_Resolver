@@ -242,12 +242,12 @@ function paint() { paintTabs(); renderCharts(); renderLog(); renderKpi(); render
 function paintTabs() {
   $('#eqps').innerHTML = S[day].equipments.map((e,i) =>
     `<button class="${i===eqp?'on':''}${halt[e.id]?' halted':''}" data-i="${i}">${e.id}
-      <span style="opacity:.6">${e.type}급 제품 가공</span>${halt[e.id]?'<b class="stopdot">정지 중</b>':''}</button>`).join('');
+      <em>${e.type}급</em>${halt[e.id]?'<b class="stopdot">정지</b>':''}</button>`).join('');
 }
 function render() {
   const d = S[day];
   if (!live[d.equipments[0].id]) fillAll();
-  document.querySelectorAll('#days button, #days-m button').forEach(b =>
+  document.querySelectorAll('#days button').forEach(b =>
     b.classList.toggle('on', +b.dataset.i === day));
   $('#title').textContent = `${d.date} · ${d.title}`;
   const bd = $('#daybadge'); if (bd) bd.textContent = `${d.date.slice(5)} ${d.title}`;
@@ -288,16 +288,13 @@ function renderTree() {
 }
 
 // ── 초기화 ────────────────────────────────────────────
-const dayHTML = cls => S.map((d,i) =>
-  `<button class="${cls}" data-i="${i}"><b>${d.date.slice(5)}</b><span>${d.title}</span></button>`).join('');
-$('#days').innerHTML = dayHTML('rail-row day');
-$('#days-m').innerHTML = dayHTML('');
+$('#days').innerHTML = S.map((d,i) =>
+  `<button data-i="${i}"><b>${d.date.slice(5)}</b><span>${d.title}</span></button>`).join('');
 $('#spd').innerHTML = [1,5,20,50].map(s => `<button data-s="${s}">x${s}</button>`).join('');
 
 const pickDay = e => { const b = e.target.closest('button'); if (!b) return;
   stop(); day = +b.dataset.i; eqp = 0; cur = N()-1; queue = []; saved = null; decided = {}; fillAll(); render(); };
 $('#days').onclick = pickDay;
-$('#days-m').onclick = pickDay;
 $('#eqps').onclick = e => { const b = e.target.closest('button'); if (!b) return; eqp = +b.dataset.i;
   document.querySelectorAll('#eqps button').forEach((x,i) => x.classList.toggle('on', i === eqp)); renderCharts(); };
 $('#logtabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; logv = b.dataset.v;
