@@ -34,17 +34,23 @@
     scroll.addEventListener('scroll', spy, { passive: true });
     // 해시를 달고 들어온 경우 그 섹션으로 보낸다.
     // .scroll 이 스크롤 컨테이너라 브라우저 기본 앵커 이동이 듣지 않는다.
-    var h = location.hash && document.querySelector(location.hash);
-    if (h && secs.indexOf(h) !== -1) scroll.scrollTop = h.offsetTop - 12;
+    try {
+      var h = location.hash && location.hash.length > 1 && document.querySelector(location.hash);
+      if (h && secs.indexOf(h) !== -1) scroll.scrollTop = h.offsetTop - 12;
+    } catch (e) {}
     spy();
   }
 
   rows.forEach(function (a) {
     a.addEventListener('click', function (e) {
-      var el = document.querySelector(a.getAttribute('href'));
-      if (!el) return;
-      e.preventDefault();
-      scroll.scrollTo({ top: el.offsetTop - 12, behavior: 'smooth' });
+      try {
+        var href = a.getAttribute('href');
+        if (!href || href === '#' || href.length <= 1) return;
+        var el = document.querySelector(href);
+        if (!el) return;
+        e.preventDefault();
+        scroll.scrollTo({ top: el.offsetTop - 12, behavior: 'smooth' });
+      } catch (err) {}
     });
   });
 
@@ -55,11 +61,19 @@
     var saved = localStorage.getItem('theme');
     if (saved) root.setAttribute('data-theme', saved);
   } catch (e) { /* 저장소 접근 불가 — 기본값(dark) 유지 */ }
+  function updateThemeBtn() {
+    if (!btn) return;
+    var isDark = root.getAttribute('data-theme') === 'dark';
+    btn.textContent = isDark ? '◐' : '◑';
+    btn.title = isDark ? '라이트 모드로 전환' : '다크 모드로 전환';
+  }
+  updateThemeBtn();
   if (btn) {
     btn.addEventListener('click', function () {
       var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
       try { localStorage.setItem('theme', next); } catch (e) { /* 무시 */ }
+      updateThemeBtn();
       window.dispatchEvent(new Event('resize'));   // 캔버스 색 즉시 갱신
     });
   }

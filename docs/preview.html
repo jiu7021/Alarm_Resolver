@@ -1,0 +1,2436 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>반도체 P&amp;T 다이싱 가상계측 &amp; 알람 자동조치 시뮬레이터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   SnowUI / CMP Design System — Exact 1:1 Cockpit Replication
+   반도체 P&T 다이싱 가상계측 & 알람 자동조치 시뮬레이터
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --ink: rgb(255, 255, 255);
+  --ink-80: rgba(255, 255, 255, 0.82);
+  --ink-40: rgba(255, 255, 255, 0.6);
+  --ink-20: rgba(255, 255, 255, 0.3);
+  --ink-10: rgba(255, 255, 255, 0.1);
+  --ink-05: rgba(255, 255, 255, 0.05);
+
+  --surface-page: #1a1a1e;
+  --surface-app: #121214;
+  --surface-panel: rgba(255, 255, 255, 0.045);
+  --surface-sunken: rgba(255, 255, 255, 0.03);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-selected: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.09);
+  --text-inverse: rgb(28, 28, 28);
+
+  --accent: rgb(10, 132, 255);
+  --warn: rgb(255, 159, 10);
+  --warn-fill: rgba(255, 159, 10, 0.14);
+  --bad: rgb(255, 69, 58);
+  --bad-fill: rgba(255, 69, 58, 0.14);
+  --ok: rgb(48, 209, 88);
+  --ok-fill: rgba(48, 209, 88, 0.14);
+  --min: rgb(255, 214, 10);
+
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-full: 999px;
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --font-sans: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root[data-theme="light"],
+html[data-theme="light"] {
+  --ink: rgb(28, 28, 30);
+  --ink-80: rgba(28, 28, 30, 0.82);
+  --ink-40: rgba(28, 28, 30, 0.58);
+  --ink-20: rgba(28, 28, 30, 0.28);
+  --ink-10: rgba(28, 28, 30, 0.1);
+  --ink-05: rgba(28, 28, 30, 0.05);
+
+  --surface-page: #ffffff;
+  --surface-app: #f2f3f7;
+  --surface-panel: #ffffff;
+  --surface-sunken: #f8f9fc;
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-selected: rgba(0, 0, 0, 0.08);
+  --line: rgba(0, 0, 0, 0.09);
+  --text-inverse: rgb(255, 255, 255);
+
+  --fill-blue: rgba(0, 122, 255, 0.12);
+  --fill-purple: rgba(175, 82, 222, 0.12);
+  --fill-cyan: rgba(50, 173, 230, 0.12);
+  --fill-lilac: rgba(88, 86, 214, 0.12);
+
+  --accent: rgb(0, 122, 255);
+  --warn: rgb(191, 116, 20);
+  --warn-fill: rgba(255, 149, 0, 0.12);
+  --bad: rgb(215, 45, 40);
+  --bad-fill: rgba(255, 59, 48, 0.12);
+  --ok: rgb(35, 150, 72);
+  --ok-fill: rgba(52, 199, 89, 0.14);
+  --min: rgb(190, 140, 0);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; word-break: keep-all; overflow-wrap: break-word; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+body {
+  background: var(--surface-app);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6, p, span, b, em, td, th {
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; }
+b { font-weight: 600; color: var(--ink); }
+
+/* Global Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+/* ═══ Shell Layout ═══ */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══ Left Navigation Rail (CMP Exact: 220px Compact) ═══ */
+.rail {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  flex: none !important;
+  border-right: 1px solid var(--line);
+  background: var(--surface-page);
+  padding: 20px 12px !important;
+  box-sizing: border-box !important;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  z-index: 100;
+}
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 0;
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  white-space: nowrap;
+}
+.rail-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.22) 0%, rgba(0, 229, 255, 0.12) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00e5ff;
+  flex: none;
+}
+.rail-sec {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-40);
+  padding: 4px 10px 6px;
+  margin-top: 18px;
+  white-space: nowrap;
+}
+.rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: var(--radius-8);
+  color: var(--ink-80);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  transition: all var(--dur-fast) var(--ease);
+}
+.rail-row:hover { background: var(--surface-hover); color: #fff; }
+.rail-row.on {
+  background: var(--surface-selected);
+  color: #fff;
+  font-weight: 600;
+}
+.rail-row.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 11px;
+  width: 3px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.rail-row svg.ri {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.75;
+  flex: none;
+}
+.rail-row.on svg.ri { opacity: 1; color: var(--accent); }
+.rail-ext { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.rail-ext .rail-row { color: var(--ink-40); padding-left: 10px; font-size: 12.5px; height: 34px; }
+.rail-ext .rail-row:hover { color: #fff; }
+.rail-foot { margin-top: auto; padding-top: 20px; font-size: 12px; color: var(--ink-40); text-align: center; }
+
+/* ═══ Main Area (1280px Max Width — Generous Breathing Room on Both Sides) ═══ */
+.col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.topbar {
+  height: 56px;
+  flex: none;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-page);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 14px;
+  z-index: 92;
+}
+.crumb { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-40); min-width: 0; }
+.crumb b { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumb .sep { color: var(--ink-20); }
+.topbar-r { display: flex; align-items: center; gap: 10px; flex: none; }
+
+.badge {
+  font-size: 12px; line-height: 18px; padding: 3px 10px; border-radius: var(--radius-full);
+  font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
+}
+.badge.ok { background: var(--ok-fill); color: var(--ok); border: 1px solid rgba(48, 209, 88, 0.3); }
+.badge.ghost { background: rgba(255, 255, 255, 0.06); color: var(--ink-80); }
+.badge.bad { background: var(--bad-fill); color: var(--bad); border: 1px solid rgba(255, 69, 58, 0.3); }
+.badge.warn { background: var(--warn-fill); color: var(--warn); border: 1px solid rgba(255, 159, 10, 0.3); }
+
+.dock-top-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff; cursor: pointer; transition: all var(--dur-fast) var(--ease);
+}
+.dock-top-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.22); }
+.dock-top-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+
+.btn {
+  font-family: inherit; font-size: 12px; line-height: 18px; padding: 7px 14px;
+  border-radius: var(--radius-8); cursor: pointer; border: 1px solid var(--line);
+  background: transparent; color: #fff; text-decoration: none; transition: all var(--dur-fast) var(--ease);
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #ffffff; font-weight: 600; }
+.btn.primary:hover { background: #0077ed; transform: translateY(-1px); }
+
+.icon-btn {
+  width: 32px; height: 32px; border-radius: var(--radius-8); border: 1px solid var(--line);
+  background: transparent; color: var(--ink); cursor: pointer; font-size: 14px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background var(--dur-fast) var(--ease);
+}
+.icon-btn:hover { background: var(--surface-hover); }
+
+/* ═══ Fixed Playback Bar & Daybar (Sticky at Top) ═══ */
+.barwrap {
+  flex: none;
+  background: var(--surface-page);
+  border-bottom: 1px solid var(--line);
+  z-index: 90;
+}
+.barwrap:has(.bar.alert) {
+  background: var(--bad-fill, rgba(255, 69, 58, 0.08));
+}
+
+.bar {
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 12px 28px !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-sizing: border-box !important;
+}
+
+.play {
+  background: #0a84ff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all var(--dur-fast) var(--ease);
+  box-shadow: 0 2px 10px rgba(10, 132, 255, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.play:hover {
+  background: #0077ed;
+  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.mini {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-fast) var(--ease);
+}
+.mini:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  padding: 0 4px;
+  min-width: 82px;
+}
+.clock b {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+.clock span {
+  font-size: 11px;
+  color: var(--ink-80);
+}
+.bar.alert .clock span {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.track {
+  flex: 1;
+  min-width: 120px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #0a84ff 0%, #30d158 100%);
+  box-shadow: 0 0 8px rgba(48, 209, 88, 0.5);
+  transition: width 0.12s linear;
+}
+
+.spd {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+.spd button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: all var(--dur-fast) var(--ease);
+}
+.spd button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.spd button.on {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══ 7 Scenario Daybar Buttons (Single Row Layout) ═══ */
+.daybar {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 8px !important;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 0 28px 14px !important;
+  box-sizing: border-box !important;
+}
+.daybar::-webkit-scrollbar { display: none; }
+.daybar button {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  padding: 7px 10px !important;
+  border-radius: 9px !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  text-align: left !important;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.daybar button:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  transform: translateY(-1px) !important;
+}
+.daybar button.on {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+.daybar button b {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 16px !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+}
+.daybar button.on b {
+  color: #ffffff !important;
+}
+.daybar button.on b::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0a84ff;
+  box-shadow: 0 0 8px rgba(10, 132, 255, 0.9);
+}
+.daybar button span {
+  font-size: 10.5px !important;
+  line-height: 14px !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  height: 28px !important;
+}
+.daybar button.on span {
+  color: rgba(255, 255, 255, 0.95) !important;
+  opacity: 1 !important;
+}
+
+/* ═══ Scrollable Viewport ═══ */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+/* ═══ Hero Header (CMP Exact: 1280px Centered) ═══ */
+.hero {
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 24px 28px 0 !important;
+  box-sizing: border-box !important;
+}
+.hero h1 {
+  font-size: 24px !important;
+  line-height: 36px !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+.sub {
+  margin: 8px 0 0 !important;
+  color: var(--ink-80) !important;
+  max-width: none !important;
+  width: 100% !important;
+  font-size: 14.5px !important;
+  line-height: 24px !important;
+}
+
+/* ═══ Main Dashboard Grid (1280px Centered) ═══ */
+main.dashboard-grid {
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 20px 28px 48px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* ═══ Panels (SnowUI Principle: No Borders, Distinct Surface & Spacing) ═══ */
+.panel {
+  background: var(--surface-panel);
+  border: none !important;
+  border-radius: var(--radius-20);
+  padding: 24px;
+}
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.panel h2 {
+  font-size: 15.5px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #fff;
+}
+.hint { color: var(--ink-40); font-size: 12.5px; line-height: 19px; }
+
+/* ── Upper Row 1: Left Chart (1.25fr) + Right 3D Digital Twin (1fr) ── */
+.dash-row-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+@media (max-width: 1200px) {
+  .dash-row-top { grid-template-columns: 1fr; }
+}
+
+.panel-chart, .panel-twin { display: flex; flex-direction: column; min-width: 0; }
+
+/* Chamber / Eqp Tabs */
+#eqps {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 9px;
+  padding: 3px;
+  gap: 3px;
+}
+em {
+  font-style: normal !important;
+}
+#eqps button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--dur-fast) var(--ease);
+}
+#eqps button em {
+  font-style: normal !important;
+  font-size: 11px !important;
+  opacity: 0.8;
+  margin-left: 2px;
+}
+#eqps button:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+#eqps button.on {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Charts */
+.ch {
+  padding: 12px 0 6px;
+  border-top: 1px solid var(--line);
+}
+.ch:first-child {
+  border-top: none;
+  padding-top: 2px;
+}
+.ch-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.ch-head b { font-size: 13.5px; font-weight: 600; color: #fff; }
+.ch-head em { font-style: normal; font-size: 11.5px; color: var(--ink-40); }
+.ch svg { display: block; width: 100%; height: 74px !important; }
+
+/* 3D Digital Twin Card */
+.cmp-twin-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-16);
+  padding: 16px;
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+}
+.cmp-3d-viewport {
+  position: relative;
+  width: 100%;
+  background: radial-gradient(circle at 50% 45%, rgba(35, 38, 48, 0.6) 0%, rgba(14, 15, 18, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.6);
+}
+.cmp-3d-svg { width: 100%; height: auto; display: block; }
+
+/* 3D Animations */
+.iso-spin-anim, .iso-water-anim, .iso-spark-anim { animation-play-state: paused !important; }
+.is-running .iso-spin-anim {
+  animation: iso-blade-spin 1.5s linear infinite;
+  animation-play-state: running !important;
+}
+@keyframes iso-blade-spin {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -180; }
+}
+
+.is-running .iso-water-anim {
+  animation: iso-water-flow 0.8s linear infinite;
+  animation-play-state: running !important;
+}
+@keyframes iso-water-flow {
+  from { stroke-dashoffset: 20; }
+  to { stroke-dashoffset: 0; }
+}
+
+.is-running .iso-spark-anim {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: iso-spark-flicker 0.25s infinite alternate;
+  animation-play-state: running !important;
+}
+@keyframes iso-spark-flicker {
+  0% { transform: scale(0.75); opacity: 0.4; }
+  100% { transform: scale(1.25); opacity: 1; }
+}
+
+.is-halted #spindle-dicing-head {
+  transform: translateY(-24px) !important;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#spindle-dicing-head { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+.cmp-twin-card.is-halted .cmp-3d-viewport {
+  border-color: rgba(255, 69, 58, 0.5);
+  box-shadow: inset 0 0 25px rgba(255, 69, 58, 0.25);
+}
+
+/* 4 Telemetry Gauges (CMP Exact: 2x2 Grid) */
+.cmp-gauges-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.gauge-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-12);
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.gauge-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+.gauge-lab { font-size: 11px; color: var(--ink-40); font-weight: 500; margin-bottom: 2px; }
+.gauge-val {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.gauge-sub { font-size: 10.5px; color: var(--ink-80); margin-top: 2px; }
+.gauge-val.alert { color: var(--bad); }
+.gauge-val.ok { color: var(--ok); }
+.gauge-val.warn { color: var(--warn); }
+
+/* ── Middle Row 2: Equipment Status (Speedometer + Distribution Bars) ── */
+.panel-status { display: flex; flex-direction: column; }
+.eqp-status-container {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+@media (max-width: 1050px) {
+  .eqp-status-container { grid-template-columns: 1fr; }
+}
+
+.status-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+}
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.status-dot.ok { background: #30d158; box-shadow: 0 0 8px rgba(48, 209, 88, 0.85); }
+.status-dot.auto { background: #0a84ff; box-shadow: 0 0 8px rgba(10, 132, 255, 0.85); }
+.status-tag { font-size: 11px; font-weight: 500; color: var(--ink-40); margin-left: auto; }
+
+/* Speedometer Box */
+.speedo-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-16);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+}
+.speedo-visual-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+}
+.speedo-svg { width: 100%; max-width: 255px; height: auto; display: block; overflow: visible; }
+.speedo-digital { text-align: center; margin-top: -14px; }
+.speedo-val-row {
+  font-size: 21px;
+  font-weight: 700;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+.speedo-val-row small { font-size: 12px; font-weight: 600; color: var(--ink-40); }
+.speedo-sub-row { font-size: 11px; font-weight: 600; margin-top: 3px; }
+.speedo-sub-row.ok { color: var(--ok); }
+.speedo-sub-row.warn { color: var(--warn); }
+.speedo-sub-row.bad { color: var(--bad); }
+
+/* Distribution Bars */
+.bars-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-16);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+}
+.bars-list { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; flex-direction: column; gap: 3px; }
+.bar-row-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+}
+.bar-row-lab { color: rgba(255, 255, 255, 0.9); }
+.bar-row-val { font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+.bar-row-val.ok { color: var(--ok); }
+.bar-row-val.warn { color: var(--warn); }
+.bar-row-val.crit { color: var(--bad); }
+.bar-row-val.info { color: #0a84ff; }
+
+.bar-track {
+  height: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.bar-fill { height: 100%; border-radius: 999px; transition: width 0.25s ease-out; }
+.bar-fill.raw { background: linear-gradient(90deg, #ff9f0a, #ff453a); }
+.bar-fill.auto { background: linear-gradient(90deg, #30d158, #0a84ff); box-shadow: 0 0 8px rgba(48, 209, 88, 0.6); }
+.bar-fill.man { background: #ff453a; box-shadow: 0 0 8px rgba(255, 69, 58, 0.6); }
+.bar-fill.avoid { background: linear-gradient(90deg, #ff9f0a, #ffd60a); box-shadow: 0 0 8px rgba(255, 159, 10, 0.6); }
+.bar-fill.dt { background: #ff453a; }
+.bar-row-sub { font-size: 11px; color: var(--ink-40); }
+
+/* AI Briefing */
+.brief-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-16);
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.brief-box .tag {
+  display: inline-block;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  margin-bottom: 8px;
+}
+.brief-box p { margin: 0; font-size: 14px; line-height: 23px; color: var(--ink); }
+
+/* ── Bottom Row 3: Domain Principles (3 Cards) ── */
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 4px;
+}
+@media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; } }
+.about-card {
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-16);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.about-card:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.18); }
+.about-icon { font-size: 22px; margin-bottom: 2px; }
+.about-card h3 { font-size: 14.5px; font-weight: 600; color: #fff; margin: 0; }
+.about-card p { font-size: 13px; line-height: 22px; color: var(--ink-80); margin: 0; }
+.about-card p b { color: #fff; }
+
+.kv { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+.kv td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.kv tr:last-child td { border-bottom: none; }
+.kv .ok { color: var(--ok); font-weight: 600; text-align: right; }
+.kv .bad { color: var(--bad); font-weight: 600; text-align: right; }
+
+/* ═══ Floating Fab Console Widget (Draggable & Resizable) ═══ */
+.fab-console {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  width: 395px;
+  min-width: 320px;
+  max-width: 860px;
+  height: 560px;
+  min-height: 260px;
+  max-height: 88vh;
+  background: rgba(18, 20, 26, 0.94);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+.fab-console.is-dragging,
+.fab-console.is-resizing {
+  transition: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+.fab-console.is-closed {
+  transform: scale(0.85) translateY(40px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fc-head {
+  padding: 13px 18px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  flex-shrink: 0;
+}
+.fc-head:active,
+.fab-console.is-dragging .fc-head {
+  cursor: grabbing;
+}
+.fc-drag-hint {
+  font-size: 13px;
+  letter-spacing: -1px;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: grab;
+  margin-left: 2px;
+}
+
+/* 8-Direction Resizers */
+.fc-resizer {
+  position: absolute;
+  z-index: 105;
+  box-sizing: border-box;
+}
+.fc-resizer-n {
+  top: 0; left: 16px; right: 16px; height: 7px; cursor: ns-resize;
+}
+.fc-resizer-s {
+  bottom: 0; left: 16px; right: 16px; height: 7px; cursor: ns-resize;
+}
+.fc-resizer-w {
+  left: 0; top: 16px; bottom: 16px; width: 7px; cursor: ew-resize;
+}
+.fc-resizer-e {
+  right: 0; top: 16px; bottom: 16px; width: 7px; cursor: ew-resize;
+}
+.fc-resizer-nw {
+  top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize;
+}
+.fc-resizer-ne {
+  top: 0; right: 0; width: 16px; height: 16px; cursor: nesw-resize;
+}
+.fc-resizer-sw {
+  bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize;
+}
+.fc-resizer-se {
+  bottom: 0; right: 0; width: 22px; height: 22px; cursor: nwse-resize;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  padding: 4px; pointer-events: auto;
+  opacity: 0.55; transition: opacity 0.15s ease;
+}
+.fc-resizer-se:hover {
+  opacity: 1;
+}
+.fc-title-group { display: flex; align-items: center; gap: 8px; }
+.fc-pulse { width: 8px; height: 8px; border-radius: 50%; background: #30d158; box-shadow: 0 0 8px #30d158; }
+.fc-title { font-size: 13.5px; font-weight: 600; color: #fff; }
+.fc-cnt-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.fc-ctrl-group { display: flex; align-items: center; gap: 6px; }
+.fc-ctrl-btn {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer; font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+}
+.fc-ctrl-btn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+.fc-hud {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+}
+.fc-hud-box {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 7px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.fc-hud-box:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
+.fc-hud-num {
+  display: block; font-size: 16px; font-weight: 700; font-family: var(--font-mono); line-height: 1.1;
+}
+.fc-hud-lbl { display: block; font-size: 10.5px; font-weight: 600; color: rgba(255, 255, 255, 0.6); margin-top: 2px; }
+.fc-hud-box.crit .fc-hud-num { color: var(--bad); }
+.fc-hud-box.warn .fc-hud-num { color: var(--warn); }
+.fc-hud-box.auto .fc-hud-num { color: var(--ok); }
+
+.fc-filter-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.fc-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 5px 4px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.fc-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.fc-tab.on { color: #fff; background: rgba(255, 255, 255, 0.14); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+
+.fc-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fc-sec-header {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+  color: rgba(255, 255, 255, 0.5); letter-spacing: 0.02em; margin-top: 2px;
+}
+.fc-sec-dot { width: 6px; height: 6px; border-radius: 50%; }
+.fc-sec-dot.crit { background: var(--bad); box-shadow: 0 0 6px var(--bad); }
+.fc-sec-dot.auto { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.fc-stream-header { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255, 255, 255, 0.1); }
+
+.fc-pinned-list, .fc-feed-list { display: flex; flex-direction: column; gap: 8px; }
+.fc-pinned-empty, .fc-feed-empty {
+  font-size: 11.5px; color: rgba(255, 255, 255, 0.4); text-align: center;
+  padding: 12px 8px; background: rgba(255, 255, 255, 0.02); border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.fc-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.fc-card:hover { background: rgba(255, 255, 255, 0.07); transform: translateY(-1px); }
+.fc-card.auto { border-left: 3px solid var(--ok); }
+.fc-card.warn { border-left: 3px solid var(--warn); background: rgba(255, 159, 10, 0.06); }
+.fc-card.man { border-left: 3px solid var(--bad); background: rgba(255, 69, 58, 0.1); box-shadow: 0 0 16px rgba(255, 69, 58, 0.2); }
+.fc-card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.fc-card-tag { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
+.fc-card-tag.auto { background: rgba(52, 199, 89, 0.18); color: var(--ok); border: 1px solid rgba(52, 199, 89, 0.3); }
+.fc-card-tag.warn { background: rgba(255, 159, 10, 0.2); color: var(--warn); border: 1px solid rgba(255, 159, 10, 0.35); }
+.fc-card-tag.man { background: rgba(255, 69, 58, 0.2); color: var(--bad); border: 1px solid rgba(255, 69, 58, 0.35); }
+.fc-card-time { font-size: 11px; color: rgba(255, 255, 255, 0.45); font-family: var(--font-mono); font-weight: 600; }
+.fc-card-title { font-size: 12px; font-weight: 600; color: #fff; line-height: 16px; }
+.fc-card-desc { font-size: 11px; color: rgba(255, 255, 255, 0.65); line-height: 15px; }
+.fc-card-res { font-size: 11px; font-weight: 600; color: var(--ok); padding-top: 4px; border-top: 1px dashed rgba(255, 255, 255, 0.08); line-height: 14px; }
+.fc-card.warn .fc-card-res { color: var(--warn); }
+.fc-card.man .fc-card-res { color: var(--bad); }
+
+/* Floating Launcher Button */
+.fab-launcher {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  background: rgba(18, 20, 26, 0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 9px 16px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75);
+  cursor: pointer;
+  z-index: 998;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.fab-launcher.is-active { display: flex; }
+.fab-launcher-dot { width: 8px; height: 8px; border-radius: 50%; background: #30d158; box-shadow: 0 0 8px #30d158; }
+.fab-launcher-badge {
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #fff;
+  font-family: var(--font-mono);
+}
+
+.ftr {
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  border-top: 1px solid var(--line);
+  padding: 16px 28px !important;
+  text-align: center;
+  color: var(--ink-40);
+  font-size: 12px;
+  box-sizing: border-box !important;
+}
+.inline-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+.inline-link:hover { text-decoration: underline; }
+
+/* ═══ Light Theme Rules ═══ */
+html[data-theme="light"] {
+  color-scheme: light;
+}
+html[data-theme="light"] .rail-brand { color: var(--ink); }
+html[data-theme="light"] .rail-row { color: var(--ink-80); }
+html[data-theme="light"] .rail-row:hover { background: rgba(0, 0, 0, 0.05); color: var(--ink); }
+html[data-theme="light"] .rail-row.on { background: rgba(0, 122, 255, 0.08); color: var(--accent); }
+html[data-theme="light"] .rail-ext .rail-row:hover { color: var(--ink); }
+html[data-theme="light"] .crumb b { color: var(--ink); }
+html[data-theme="light"] .hero h1 { color: var(--ink) !important; }
+html[data-theme="light"] .panel h2 { color: var(--ink); }
+html[data-theme="light"] .ch-head b { color: var(--ink); }
+html[data-theme="light"] .clock b { color: var(--ink); }
+html[data-theme="light"] .status-card-header { color: var(--ink); }
+html[data-theme="light"] .speedo-val-row { color: var(--ink); }
+html[data-theme="light"] .bar-row-lab { color: var(--ink); }
+html[data-theme="light"] .about-card h3 { color: var(--ink); }
+html[data-theme="light"] .about-card p b { color: var(--ink); }
+html[data-theme="light"] .gauge-val:not(.alert):not(.ok):not(.warn) { color: var(--ink); }
+
+html[data-theme="light"] .panel {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.02);
+}
+
+html[data-theme="light"] .daybar button {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: var(--ink-80) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+html[data-theme="light"] .daybar button:hover {
+  background: #f7f8fb !important;
+  border-color: rgba(0, 0, 0, 0.18) !important;
+  color: var(--ink) !important;
+}
+html[data-theme="light"] .daybar button.on {
+  background: #ffffff !important;
+  border: 1.5px solid var(--accent) !important;
+  box-shadow: 0 2px 10px rgba(0, 122, 255, 0.18) !important;
+}
+html[data-theme="light"] .daybar button b { color: var(--ink) !important; }
+html[data-theme="light"] .daybar button span { color: var(--ink-40) !important; }
+html[data-theme="light"] .daybar button.on span { color: var(--ink-80) !important; }
+
+html[data-theme="light"] .mini {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--ink-80);
+}
+html[data-theme="light"] .mini:hover {
+  background: #f4f5f8;
+  color: var(--ink);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="light"] .spd {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .spd button { color: var(--ink-40); }
+html[data-theme="light"] .spd button:hover { color: var(--ink); background: rgba(0, 0, 0, 0.06); }
+html[data-theme="light"] .spd button.on {
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] #eqps {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] #eqps button { color: var(--ink-40); }
+html[data-theme="light"] #eqps button:hover { color: var(--ink); background: rgba(0, 0, 0, 0.06); }
+html[data-theme="light"] #eqps button.on {
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] .track {
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+html[data-theme="light"] .dock-top-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+html[data-theme="light"] .dock-top-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .badge.ghost {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink-80);
+}
+
+html[data-theme="light"] .gauge-card,
+html[data-theme="light"] .speedo-box,
+html[data-theme="light"] .bars-box,
+html[data-theme="light"] .brief-box,
+html[data-theme="light"] .about-card,
+html[data-theme="light"] .cmp-twin-card {
+  background: #f8f9fc;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .gauge-card:hover,
+html[data-theme="light"] .about-card:hover {
+  background: #f0f2f7;
+}
+html[data-theme="light"] .bar-track {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .fab-console {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15), 0 0 1px rgba(0, 0, 0, 0.2);
+}
+html[data-theme="light"] .fc-head {
+  background: rgba(0, 0, 0, 0.02);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .fc-drag-hint { color: rgba(0, 0, 0, 0.3); }
+html[data-theme="light"] .fc-title { color: var(--ink); }
+html[data-theme="light"] .fc-cnt-badge { background: rgba(0, 0, 0, 0.08); color: var(--ink); }
+html[data-theme="light"] .fc-ctrl-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--ink-40);
+}
+html[data-theme="light"] .fc-ctrl-btn:hover { background: rgba(0, 0, 0, 0.08); color: var(--ink); }
+html[data-theme="light"] .fc-hud {
+  background: rgba(0, 0, 0, 0.03);
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .fc-hud-box {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .fc-hud-box:hover { background: #f4f5f8; }
+html[data-theme="light"] .fc-hud-lbl { color: var(--ink-40); }
+html[data-theme="light"] .fc-filter-bar { border-bottom-color: rgba(0, 0, 0, 0.08); }
+html[data-theme="light"] .fc-tab { color: var(--ink-40); }
+html[data-theme="light"] .fc-tab:hover { color: var(--ink); background: rgba(0, 0, 0, 0.04); }
+html[data-theme="light"] .fc-tab.on { color: var(--ink); background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+html[data-theme="light"] .fc-sec-header { color: var(--ink-40); }
+html[data-theme="light"] .fc-stream-header { border-top-color: rgba(0, 0, 0, 0.08); }
+html[data-theme="light"] .fc-pinned-empty,
+html[data-theme="light"] .fc-feed-empty {
+  color: var(--ink-40);
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .fc-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .fc-card:hover { background: #f8f9fc; }
+html[data-theme="light"] .fc-card-title { color: var(--ink); }
+html[data-theme="light"] .fc-card-time { color: var(--ink-40); }
+html[data-theme="light"] .fc-card-desc { color: var(--ink-80); }
+html[data-theme="light"] .fc-card-res { border-top-color: rgba(0, 0, 0, 0.08); }
+html[data-theme="light"] .fc-card.warn { background: rgba(255, 159, 10, 0.06); }
+html[data-theme="light"] .fc-card.man { background: rgba(255, 69, 58, 0.06); }
+html[data-theme="light"] .fab-launcher {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.14);
+  color: var(--ink);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+}
+html[data-theme="light"] .fab-launcher-badge { background: rgba(0, 0, 0, 0.08); color: var(--ink); }
+
+html[data-theme="light"] ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.02); }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+
+/* Hidden compatibility targets for app.js */
+#log, #na, #nc, #logtabs, #kpi { display: none; }
+</style>
+</head>
+<body>
+<div class="app-layout">
+
+  <!-- ═══ 220px Compact Dark Rail (CMP Exact Sizing & Spacing) ═══ -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <div class="rail-logo">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9.5"/>
+          <circle cx="12" cy="12" r="3" fill="#00e5ff" stroke="none"/>
+          <line x1="12" y1="0.5" x2="12" y2="4.5"/>
+          <line x1="12" y1="19.5" x2="12" y2="23.5"/>
+          <line x1="0.5" y1="12" x2="4.5" y2="12"/>
+          <line x1="19.5" y1="12" x2="23.5" y2="12"/>
+        </svg>
+      </div>
+      <span>Dicing Studio</span>
+    </div>
+
+    <div class="rail-sec">대시보드</div>
+    <nav class="rail-group">
+      <a class="rail-row on" href="#s-twin" title="3D 디지털 트윈">
+        <svg class="ri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>3D 디지털 트윈
+      </a>
+      <a class="rail-row" href="#s-chart" title="가상계측 센서 트렌드 차트">
+        <svg class="ri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>가상계측 차트
+      </a>
+      <a class="rail-row" href="#s-live" title="공정 운영 현황 및 장비 상태">
+        <svg class="ri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 15 15"/></svg>공정 운영 현황
+      </a>
+      <a class="rail-row" href="#s-about" title="설계 문서 및 아키텍처 읽는 법">
+        <svg class="ri" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>설계 문서
+      </a>
+    </nav>
+
+    <div class="rail-sec">절삭 호기 (Equipment)</div>
+    <nav class="rail-group">
+      <a class="rail-row" href="#s-chart" onclick="switchEqp(0)"><span style="color:#0a84ff">●</span>&nbsp; DCS-01 (Saw 1)</a>
+      <a class="rail-row" href="#s-chart" onclick="switchEqp(1)"><span style="color:#30d158">●</span>&nbsp; DCS-02 (Saw 2)</a>
+      <a class="rail-row" href="#s-chart" onclick="switchEqp(2)"><span style="color:#ff9f0a">●</span>&nbsp; DCS-03 (Saw 3)</a>
+    </nav>
+
+    <nav class="rail-group rail-ext">
+      <a class="rail-row" href="https://archive.ics.uci.edu/dataset/601" target="_blank" rel="noopener">AI4I 2020 벤치마크 ↗</a>
+    </nav>
+
+    <div class="rail-foot">
+      <span style="font-weight:700;letter-spacing:-0.02em">✳ snowui · 양지우</span>
+    </div>
+  </aside>
+
+  <!-- ═══ Main Viewport ═══ -->
+  <div class="col">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="crumb"><span>Dashboards</span><span class="sep">/</span><b id="crumb-cur">Dicing Overview</b></div>
+      <div class="topbar-r">
+        <span class="badge ok" title="UCI AI4I 2020 Predictive Maintenance Dataset">AI4I 2020 반도체 실데이터</span>
+        <span class="badge ghost" id="daybadge">—</span>
+        <!-- Floating Console Dock/Open Button -->
+        <button id="dock-toggle-top" class="btn dock-top-btn" title="실시간 알람 관제창 열기/닫기">
+          <span class="dock-top-dot"></span>실시간 관제 <span id="dock-top-cnt">0</span>
+        </button>
+        <button id="theme-btn" class="icon-btn" type="button" aria-label="테마 전환">◐</button>
+      </div>
+    </header>
+
+    <!-- ═══ FIXED PLAYBACK & SCENARIO BAR (CMP 동일 구조: 상단 고정되어 스크롤해도 계속 유지) ═══ -->
+    <div class="barwrap" id="barwrap">
+      <section class="bar" id="bar">
+        <button id="play" class="play">▶ 재생</button>
+        <button id="rst" class="mini" title="처음으로">↺</button>
+        <button id="end" class="mini" title="끝으로">⏭</button>
+        <div class="clock"><b id="clock">22:00</b><span id="slow">야간 조업 진행 중</span></div>
+        <div class="track"><i id="prog"></i></div>
+        <nav id="spd" class="spd"></nav>
+      </section>
+      <nav class="daybar" id="days"></nav>
+    </div>
+
+    <!-- 단일 부드러운 스크롤 영역 (CMP 1280px 최적화) -->
+    <div class="scroll">
+
+      <div class="hero">
+        <h1>반도체 P&amp;T 다이싱 가상계측 &amp; 알람 자동조치 시뮬레이터</h1>
+        <p class="sub">
+          UCI AI4I 2020 반도체 절삭 설비 실데이터 기반 3개 호기(DCS-01~03) 야간 10시간 연속 가공(22:00~08:00) 시뮬레이션입니다.
+          가역적 이상(냉각수 유량·이송 속도)은 <b>무중단 자동 보정</b>되며, 비가역적 블레이드 마모(≥200min) 도달 시 <b>해당 설비만 단독 정지</b> 후 교체 승인을 요청합니다.
+        </p>
+      </div>
+
+      <!-- Hidden compatibility container for app.js #hold -->
+      <div id="hold" class="hold" style="display:none;"></div>
+
+      <main class="dashboard-grid">
+
+        <!-- ── 상단 2열 그리드: 좌측(가상계측 차트) + 우측(3D 디지털 트윈) ── -->
+        <div class="dash-row-top">
+
+          <!-- 좌측: 가상계측 & 핵심 센서 트렌드 차트 (#s-chart) -->
+          <section class="panel panel-chart" id="s-chart">
+            <div class="panel-head">
+              <h2>가상계측 · 센서 트렌드 차트</h2>
+              <nav id="eqps" class="tabs sm"></nav>
+            </div>
+            <div id="charts"></div>
+            <p class="hint" style="margin-top:10px">
+              세로선은 이상 감지 시점, 붉은 음영은 해당 호기 단독 정지 구간입니다. 점선은 규격 판정 기준선입니다.
+            </p>
+          </section>
+
+          <!-- 우측: 3D 디지털 트윈 & 실시간 텔레메트리 게이지 (#s-twin) -->
+          <section class="panel panel-twin" id="s-twin">
+            <div class="panel-head">
+              <h2>⚙️ 반도체 P&amp;T 다이싱 3D 디지털 트윈 (<span id="twin-ch-name">DCS-01</span>)</h2>
+              <div id="twin-status-badge"><span class="badge ok">🟢 가공 중 (RUNNING)</span></div>
+            </div>
+
+            <div class="cmp-twin-card" id="cmp-twin-card">
+              <!-- 3D 아이소메트릭 다이싱 쏘 시각화 (웨이퍼 낱개 절삭 연출) -->
+              <div class="cmp-3d-viewport">
+                <svg id="dicing-3d-sim" viewBox="0 0 540 370" class="cmp-3d-svg">
+                  <defs>
+                    <radialGradient id="ring-grad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#2a2d36"/>
+                      <stop offset="70%" stop-color="#181a20"/>
+                      <stop offset="100%" stop-color="#0f1115"/>
+                    </radialGradient>
+                    <radialGradient id="tape-grad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.45"/>
+                      <stop offset="80%" stop-color="#0369a1" stop-opacity="0.3"/>
+                      <stop offset="100%" stop-color="#075985" stop-opacity="0.2"/>
+                    </radialGradient>
+                    <linearGradient id="wafer-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#38bdf8"/>
+                      <stop offset="40%" stop-color="#0284c7"/>
+                      <stop offset="75%" stop-color="#1e293b"/>
+                      <stop offset="100%" stop-color="#0f172a"/>
+                    </linearGradient>
+                    <linearGradient id="spindle-col-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#334155"/>
+                      <stop offset="35%" stop-color="#64748b"/>
+                      <stop offset="70%" stop-color="#475569"/>
+                      <stop offset="100%" stop-color="#1e293b"/>
+                    </linearGradient>
+                    <radialGradient id="blade-wheel-grad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stop-color="#f8fafc"/>
+                      <stop offset="40%" stop-color="#94a3b8"/>
+                      <stop offset="85%" stop-color="#334155"/>
+                      <stop offset="100%" stop-color="#0f172a"/>
+                    </radialGradient>
+                  </defs>
+
+                  <!-- 하부 섀도우 -->
+                  <ellipse cx="270" cy="285" rx="210" ry="70" fill="rgba(0,0,0,0.65)" filter="blur(10px)"/>
+
+                  <!-- 1. 스테인리스 다이싱 링 (SUS Ring Frame) -->
+                  <ellipse cx="270" cy="245" rx="200" ry="66" fill="url(#ring-grad)" stroke="#475569" stroke-width="2.5"/>
+                  <ellipse cx="270" cy="245" rx="178" ry="58" fill="url(#tape-grad)" stroke="#0284c7" stroke-width="1.5"/>
+
+                  <!-- 2. 300mm 실리콘 웨이퍼 (Silicon Wafer) -->
+                  <ellipse cx="270" cy="243" rx="142" ry="46" fill="url(#wafer-grad)" stroke="#38bdf8" stroke-width="1.8"/>
+
+                  <!-- 3. 낱개 다이 IC 칩 격자 그리드 (Wafer Die Grid & Streets) -->
+                  <g opacity="0.65">
+                    <!-- 가로 절삭선 (Horizontal Streets) -->
+                    <path d="M152,230 L388,230" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+                    <path d="M136,236 L404,236" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+                    <path d="M130,243 L410,243" stroke="#00f0ff" stroke-width="1.8" stroke-dasharray="4 2"/> <!-- 현재 컷팅 라인 -->
+                    <path d="M136,250 L404,250" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+                    <path d="M152,256 L388,256" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+
+                    <!-- 세로 절삭선 (Vertical Streets - 낱개 칩 분리) -->
+                    <path d="M175,220 L175,266 M205,214 L205,272 M235,210 L235,276 M265,208 L265,278 M295,210 L295,276 M325,214 L325,272 M355,220 L355,266" stroke="rgba(255,255,255,0.3)" stroke-width="1.2"/>
+                  </g>
+
+                  <!-- 4. 고속 회전 다이아몬드 절삭 블레이드 & 스핀들 어셈블리 -->
+                  <g id="spindle-dicing-head">
+                    <!-- 스핀들 모터 지지 컬럼 -->
+                    <rect x="250" y="45" width="40" height="135" rx="8" fill="url(#spindle-col-grad)" stroke="#334155" stroke-width="1.5"/>
+                    <rect x="264" y="60" width="12" height="50" rx="3" fill="#00e5ff" opacity="0.9" filter="drop-shadow(0 0 6px #00e5ff)"/>
+
+                    <!-- 초박형 다이아몬드 블레이드 휠 -->
+                    <circle cx="270" cy="205" r="38" fill="url(#blade-wheel-grad)" stroke="#e2e8f0" stroke-width="1.5"/>
+                    <circle cx="270" cy="205" r="39" fill="none" stroke="#00e5ff" stroke-width="2" stroke-dasharray="14 10" class="iso-spin-anim" opacity="0.9"/>
+                    <circle cx="270" cy="205" r="8" fill="#0f172a" stroke="#00e5ff" stroke-width="2"/>
+
+                    <!-- DI Water 듀얼 냉각수 분사 노즐 & 제트 -->
+                    <path d="M236,182 L266,240" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 4" class="iso-water-anim" opacity="0.85"/>
+                    <path d="M304,182 L274,240" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 4" class="iso-water-anim" opacity="0.85"/>
+
+                    <!-- 절삭 접촉부 마이크로 스파크 (cx:270, cy:243) -->
+                    <g id="cut-sparks" class="iso-spark-anim">
+                      <circle cx="270" cy="243" r="3.5" fill="#ffffff" filter="drop-shadow(0 0 8px #00e5ff)"/>
+                      <line x1="263" y1="243" x2="277" y2="243" stroke="#ffffff" stroke-width="1.8"/>
+                      <line x1="270" y1="236" x2="270" y2="250" stroke="#ffffff" stroke-width="1.8"/>
+                      <line x1="265" y1="238" x2="275" y2="248" stroke="#ffd166" stroke-width="1.5"/>
+                      <line x1="265" y1="248" x2="275" y2="238" stroke="#00e5ff" stroke-width="1.5"/>
+                    </g>
+                  </g>
+
+                  <!-- 5. HUD 콜아웃 4종 -->
+                  <!-- 스핀들 회전수 HUD -->
+                  <g transform="translate(45, 75)">
+                    <line x1="140" y1="45" x2="190" y2="10" stroke="#00e5ff" stroke-width="1.2" stroke-dasharray="2 2"/>
+                    <rect x="0" y="0" width="145" height="26" rx="6" fill="rgba(18,18,22,0.92)" stroke="#4a4a52" stroke-width="1.2"/>
+                    <circle cx="12" cy="13" r="4" fill="#00e5ff"/>
+                    <text x="22" y="17" fill="#fff" font-size="11" font-weight="700">스핀들: <tspan id="hud-3d-rpm">1,505 RPM</tspan></text>
+                  </g>
+
+                  <!-- 스핀들 소비전력 HUD -->
+                  <g transform="translate(45, 145)">
+                    <line x1="140" y1="0" x2="190" y2="0" stroke="#00e5ff" stroke-width="1.2" stroke-dasharray="2 2"/>
+                    <rect x="0" y="-13" width="145" height="26" rx="6" fill="rgba(18,18,22,0.92)" stroke="#4a4a52" stroke-width="1.2"/>
+                    <circle cx="12" cy="0" r="4" fill="#00e5ff"/>
+                    <text x="22" y="4" fill="#fff" font-size="11" font-weight="700">소비전력: <tspan id="hud-3d-power">5,856 W</tspan></text>
+                  </g>
+
+                  <!-- 냉각수 유량 HUD -->
+                  <g transform="translate(355, 95)">
+                    <line x1="0" y1="40" x2="-40" y2="70" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="2 2"/>
+                    <rect x="0" y="0" width="145" height="26" rx="6" fill="rgba(18,18,22,0.92)" stroke="#38bdf8" stroke-width="1.2"/>
+                    <circle cx="12" cy="13" r="4" fill="#38bdf8"/>
+                    <text x="22" y="17" fill="#fff" font-size="11" font-weight="700">냉각수: <tspan id="hud-3d-flow">2.4 L/min</tspan></text>
+                  </g>
+
+                  <!-- 블레이드 잔여 수명 HUD -->
+                  <g transform="translate(355, 195)">
+                    <line x1="0" y1="10" x2="-40" y2="10" stroke="#ffd166" stroke-width="1.2" stroke-dasharray="2 2"/>
+                    <rect x="0" y="0" width="145" height="26" rx="6" fill="rgba(18,18,22,0.92)" stroke="#ffd166" stroke-width="1.2"/>
+                    <circle cx="12" cy="13" r="4" fill="#ffd166"/>
+                    <text x="22" y="17" fill="#fff" font-size="11" font-weight="700">블레이드: <tspan id="hud-3d-wear">42.0 min</tspan></text>
+                  </g>
+
+                  <!-- 6. 단독 정지 비상 오버레이 -->
+                  <g id="dicing-3d-halt-overlay" opacity="0" style="transition: opacity 0.3s ease;">
+                    <rect x="35" y="20" width="470" height="320" rx="14" fill="rgba(255,69,58,0.24)" stroke="#ff453a" stroke-width="2"/>
+                    <rect x="115" y="145" width="310" height="65" rx="10" fill="rgba(18,18,22,0.96)" stroke="#ff453a" stroke-width="2"/>
+                    <text x="270" y="172" fill="#ff453a" font-size="15" font-weight="800" text-anchor="middle">⚠️ 설비 긴급 정지 (HALTED)</text>
+                    <text x="270" y="193" fill="rgba(255,255,255,0.9)" font-size="12" font-weight="600" text-anchor="middle">스핀들 정지 · 블레이드 공구 교체 필요</text>
+                  </g>
+                </svg>
+              </div>
+
+              <!-- 실시간 챔버 센서 4대 게이지 (2x2) -->
+              <div class="cmp-gauges-grid">
+                <div class="gauge-card">
+                  <div class="gauge-lab">절삭부 공정온도 (방열여유)</div>
+                  <div class="gauge-val ok" id="g-proc">310.5 K</div>
+                  <div class="gauge-sub" id="g-proc-sub">방열 여유 8.9 K (정상)</div>
+                </div>
+                <div class="gauge-card">
+                  <div class="gauge-lab">스핀들 부하 토크</div>
+                  <div class="gauge-val" id="g-torque">35.8 Nm</div>
+                  <div class="gauge-sub" id="g-torque-sub">마모 연동 한계 내 제어</div>
+                </div>
+                <div class="gauge-card">
+                  <div class="gauge-lab">스핀들 소비전력</div>
+                  <div class="gauge-val" id="g-power">5,856 W</div>
+                  <div class="gauge-sub">정상 밴드 (3,500~9,000 W)</div>
+                </div>
+                <div class="gauge-card">
+                  <div class="gauge-lab">블레이드 마모 누적</div>
+                  <div class="gauge-val" id="g-wear">42.0 min</div>
+                  <div class="gauge-sub" id="g-wear-sub">잔여 158.0 min (임계 200min)</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div> <!-- /.dash-row-top -->
+
+        <!-- ── 중간 열: 공정 운영 현황 & 장비 종합 상태 (속도계 + 가로 막대 그래프) ── -->
+        <section class="panel panel-status" id="s-live">
+          <div class="panel-head">
+            <h2>공정 운영 현황 &amp; 장비 종합 상태 (Equipment Status)</h2>
+            <div class="hint" id="title"></div>
+          </div>
+
+          <div class="eqp-status-container">
+            <!-- 좌측: 자동차 계기판/속도계 형태의 스핀들 소비전력 계기판 -->
+            <div class="speedo-box">
+              <div class="status-card-header">
+                <span class="status-dot ok"></span>
+                <b>스핀들 소비전력 계기판</b>
+                <span class="status-tag">정상 제어 밴드 (3,500~9,000 W)</span>
+              </div>
+
+              <div class="speedo-visual-wrap">
+                <svg viewBox="-40 6 340 200" class="speedo-svg">
+                  <defs>
+                    <linearGradient id="speedo-bg-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="rgba(255,255,255,0.04)"/>
+                      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+                    </linearGradient>
+                    <linearGradient id="speedo-norm-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stop-color="#30d158"/>
+                      <stop offset="100%" stop-color="#00e5ff"/>
+                    </linearGradient>
+                  </defs>
+
+                  <!-- 배경 게이지 트랙 (240도 원호: 150도 ~ 390도, R=95, 중심 (130, 130)) -->
+                  <path d="M 47.7 177.5 A 95 95 0 1 1 212.3 177.5" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" stroke-linecap="round"/>
+
+                  <!-- 저전력 주의 구간 (2,000 ~ 3,500 W: 150도 ~ 195도) -->
+                  <path d="M 47.7 177.5 A 95 95 0 0 1 38.2 105.4" fill="none" stroke="rgba(255,159,10,0.35)" stroke-width="16" stroke-linecap="round"/>
+
+                  <!-- 정상 공정 윈도우 구간 (3,500 ~ 9,000 W: 195도 ~ 360도) -->
+                  <path d="M 38.2 105.4 A 95 95 0 0 1 225.0 130.0" fill="none" stroke="url(#speedo-norm-grad)" stroke-width="16" stroke-linecap="round"/>
+
+                  <!-- 과전력 주의/경보 구간 (9,000 ~ 10,000 W: 360도 ~ 390도) -->
+                  <path d="M 225.0 130.0 A 95 95 0 0 1 212.3 177.5" fill="none" stroke="rgba(255,69,58,0.5)" stroke-width="16" stroke-linecap="round"/>
+
+                  <!-- 기준 눈금 틱 (트랙 내부 가이드) -->
+                  <line x1="64.2" y1="168.0" x2="56.4" y2="172.5" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                  <line x1="56.6" y1="110.3" x2="47.9" y2="108.0" stroke="#30d158" stroke-width="2"/>
+                  <line x1="130" y1="54" x2="130" y2="45" stroke="#00e5ff" stroke-width="2.5"/>
+                  <line x1="206" y1="130" x2="215" y2="130" stroke="#ff453a" stroke-width="2"/>
+                  <line x1="195.8" y1="168.0" x2="203.6" y2="172.5" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+
+                  <!-- 레이블 (완전한 여백 확보로 잘림 방지) -->
+                  <text x="44" y="196" fill="rgba(255,255,255,0.45)" font-size="9" font-weight="600" text-anchor="end">2,000</text>
+                  <text x="34" y="104" fill="#30d158" font-size="9.5" font-weight="700" text-anchor="end">3,500 하한</text>
+                  <text x="130" y="24" fill="#00e5ff" font-size="10" font-weight="800" text-anchor="middle">목표 5,500~6,000</text>
+                  <text x="226" y="128" fill="#ff453a" font-size="9.5" font-weight="700" text-anchor="start">9,000 상한</text>
+                  <text x="216" y="196" fill="rgba(255,255,255,0.45)" font-size="9" font-weight="600" text-anchor="start">10,000</text>
+
+                  <!-- 동적 지침 바늘 (Needle Indicator) -->
+                  <g id="speedo-needle-group" style="transform-origin: 130px 130px; transform: rotate(0deg); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+                    <line x1="130" y1="130" x2="130" y2="46" stroke="#00e5ff" stroke-width="3" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(0,229,255,0.8))"/>
+                    <circle cx="130" cy="130" r="8" fill="#1c1d22" stroke="#00e5ff" stroke-width="2.5"/>
+                    <circle cx="130" cy="130" r="3" fill="#00e5ff"/>
+                  </g>
+                </svg>
+
+                <!-- 계기판 중앙 디지털 수치 -->
+                <div class="speedo-digital">
+                  <div class="speedo-val-row"><b id="speedo-power-val">5,856</b> <small>W</small></div>
+                  <div class="speedo-sub-row ok" id="speedo-power-desc">스핀들 전력 정상 제어 중</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 우측: 가로 막대 그래프 5종 (Distribution Progress Bars) -->
+            <div class="bars-box">
+              <div class="status-card-header">
+                <span class="status-dot auto"></span>
+                <b>공정 이상 및 R2R 조치 분포 (Distribution)</b>
+                <span class="status-tag">실시간 누적 집계</span>
+              </div>
+
+              <div class="bars-list">
+                <!-- 1. 원시 센서 임계 초과 -->
+                <div class="bar-row">
+                  <div class="bar-row-info">
+                    <span class="bar-row-lab">원시 센서 임계 초과</span>
+                    <span class="bar-row-val warn" id="b-raw-val">0건</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill raw" id="b-raw-fill" style="width: 0%;"></div></div>
+                  <div class="bar-row-sub">단순 3σ 임계 이탈 (기존 팹 일괄 알람 유발)</div>
+                </div>
+
+                <!-- 2. 가역 조치 무중단 자동 실행 -->
+                <div class="bar-row">
+                  <div class="bar-row-info">
+                    <span class="bar-row-lab">⚡ 가역 조치 무중단 자동 보정</span>
+                    <span class="bar-row-val ok" id="b-auto-val">0건</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill auto" id="b-auto-fill" style="width: 0%;"></div></div>
+                  <div class="bar-row-sub">냉각수 유량 증대 · 이송 속도 하향 (라인 무중단)</div>
+                </div>
+
+                <!-- 3. 설비 비상 정지 (비가역 공구 교체) -->
+                <div class="bar-row">
+                  <div class="bar-row-info">
+                    <span class="bar-row-lab">👤 설비 비상 정지 · 비가역 조치 (공구 교체)</span>
+                    <span class="bar-row-val crit" id="b-man-val">0건</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill man" id="b-man-fill" style="width: 0%;"></div></div>
+                  <div class="bar-row-sub" id="b-man-sub">블레이드 마모 200min 한계 초과 시 설비 즉시 정지 후 승인 요청</div>
+                </div>
+
+                <!-- 4. 센서 이상 의심 · 오조치 차단 (경고) -->
+                <div class="bar-row">
+                  <div class="bar-row-info">
+                    <span class="bar-row-lab">🟡 센서 이상 의심 · 오조치 차단 (경고)</span>
+                    <span class="bar-row-val warn" id="b-avoid-val">0건</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill avoid" id="b-avoid-fill" style="width: 0%;"></div></div>
+                  <div class="bar-row-sub" id="b-avoid-sub">센서 고착/불일치 감지 시 파라미터 오조치 차단 (센서 점검 경고)</div>
+                </div>
+
+                <!-- 5. 정지 손실 시간 -->
+                <div class="bar-row">
+                  <div class="bar-row-info">
+                    <span class="bar-row-lab">⏱️ 정지 손실 시간 (Downtime Loss)</span>
+                    <span class="bar-row-val crit" id="b-dt-val">0분</span>
+                  </div>
+                  <div class="bar-track"><div class="bar-fill dt" id="b-dt-fill" style="width: 0%;"></div></div>
+                  <div class="bar-row-sub" id="b-dt-sub">정상 가공 가동 (손실 0분)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI 양산 브리핑 -->
+          <div class="brief-box">
+            <span class="tag">AI 양산 브리핑</span>
+            <p id="brief"></p>
+          </div>
+        </section>
+
+        <!-- ── 하단 열: P&T 다이싱 아키텍처 & 물리 거동 가이드 (3개 카드) ── -->
+        <section class="panel" id="s-about">
+          <div class="panel-head">
+            <h2>P&amp;T 다이싱 공정 운영 아키텍처 &amp; 물리 거동 가이드</h2>
+            <div class="hint">상세 공학적 수치와 룰 검증은 <a class="inline-link" href="project.html">엔지니어링 리포트</a>에 수록되어 있습니다</div>
+          </div>
+
+          <div class="about-grid">
+            <div class="about-card">
+              <div class="about-icon">⚡</div>
+              <h3>알람 이원화: 가역적 보정 vs 소모품 마모</h3>
+              <p>
+                단순 절삭 발열이나 일시적 부하 편차 등 가역적 이상은 <b>냉각수 증대 및 이송속도 하향으로 무중단 자동 실행</b>합니다.
+                반면 다이아몬드 블레이드 마모(≥200min) 도달 등 비가역적 공구 손상 시에만 <b>해당 설비를 단독 정지</b>시키고 교체 승인을 요청합니다.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-icon">🛡️</div>
+              <h3>센서 신뢰성 게이트 (Sensor Gate)</h3>
+              <p>
+                센서 값이 한자리에 고착되거나 물리적으로 불가능한 값(환경 온도가 가공부보다 높음)이 발생하면 센서 이상으로 판정합니다.
+                <b>센서를 신뢰할 수 없는 경우 해당 센서 기반의 자동 조치를 전면 차단</b>하여 오조치를 원천 방지합니다.
+              </p>
+            </div>
+
+            <div class="about-card">
+              <div class="about-icon">⏳</div>
+              <h3>설비 단독 정지와 다운타임 누적</h3>
+              <p>
+                공구 마모가 180min에 도달하면 라인을 세우지 않고 <b>차기 정기 교체로 사전 예약</b>합니다.
+                임계점(200min) 도달 시 이상 설비만 단독 정지되며, 엔지니어 판단이 지연될수록 <b>정지 손실 시간이 누적</b>됩니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class="ftr">
+        데이터: AI4I 2020 Predictive Maintenance Dataset · UCI Machine Learning Repository (id 601) ·
+        룰 기반 판정 엔진: 물리 사양 100% 일치 검증 · <a class="inline-link" href="https://github.com/jiu7021/Alarm_Resolver" target="_blank" rel="noopener">GitHub Repository</a>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ═══ 옵션 1 플로팅 팹 알람 관제 콘솔 (Floating Fab Console Widget - Draggable & Resizable) ═══ -->
+  <aside class="fab-console" id="fab-console">
+    <!-- 8방향 윈도우 리사이즈 핸들 -->
+    <div class="fc-resizer fc-resizer-nw" data-dir="nw"></div>
+    <div class="fc-resizer fc-resizer-n" data-dir="n"></div>
+    <div class="fc-resizer fc-resizer-ne" data-dir="ne"></div>
+    <div class="fc-resizer fc-resizer-e" data-dir="e"></div>
+    <div class="fc-resizer fc-resizer-se" data-dir="se" title="드래그하여 크기 조절">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M8 2L2 8M8 5L5 8M8 8L8 8" stroke="rgba(255,255,255,0.4)" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="fc-resizer fc-resizer-s" data-dir="s"></div>
+    <div class="fc-resizer fc-resizer-sw" data-dir="sw"></div>
+    <div class="fc-resizer fc-resizer-w" data-dir="w"></div>
+
+    <div class="fc-head" title="드래그하여 창 이동">
+      <div class="fc-title-group">
+        <span class="fc-pulse"></span>
+        <b class="fc-title">실시간 알람 관제</b>
+        <span class="fc-cnt-badge" id="fc-cnt">0</span>
+        <span class="fc-drag-hint" title="드래그하여 창 이동">⋮⋮</span>
+      </div>
+      <div class="fc-ctrl-group">
+        <button id="fab-min-btn" class="fc-ctrl-btn" title="최소화">—</button>
+        <button id="fab-close-btn" class="fc-ctrl-btn" title="닫기">✕</button>
+      </div>
+    </div>
+
+    <!-- 3단계 빠른 상태 요약 HUD -->
+    <div class="fc-hud">
+      <div class="fc-hud-box crit" data-f="man" title="비가역 마모 설비 단독 정지">
+        <b class="fc-hud-num" id="fc-crit">0</b>
+        <span class="fc-hud-lbl">🔴 설비정지</span>
+      </div>
+      <div class="fc-hud-box warn" data-f="warn" title="블레이드 수명 사전예보 및 센서 이상 점검 경고">
+        <b class="fc-hud-num" id="fc-warn">0</b>
+        <span class="fc-hud-lbl">🟡 주의·경고</span>
+      </div>
+      <div class="fc-hud-box auto" data-f="auto" title="무중단 파라미터 자동 실행">
+        <b class="fc-hud-num" id="fc-auto">0</b>
+        <span class="fc-hud-lbl">⚡ 자동실행</span>
+      </div>
+    </div>
+
+    <!-- 필터 탭 바 -->
+    <div class="fc-filter-bar">
+      <button class="fc-tab on" data-f="all">전체</button>
+      <button class="fc-tab" data-f="auto">자동실행</button>
+      <button class="fc-tab" data-f="warn">주의·경고</button>
+      <button class="fc-tab" data-f="man">설비정지</button>
+    </div>
+
+    <!-- 알람 목록 본문 (고우선순위 상단 고정 + 하단 실시간 자동보정 스트림) -->
+    <div class="fc-body">
+      <div class="fc-sec-header">
+        <span class="fc-sec-dot crit"></span>
+        <span class="fc-sec-title">고우선순위 관제 (PRIORITY)</span>
+      </div>
+      <div id="console-pinned" class="fc-pinned-list">
+        <div class="fc-pinned-empty">현재 긴급 정지 및 예보 없음 (정상 가동)</div>
+      </div>
+
+      <div class="fc-sec-header fc-stream-header">
+        <span class="fc-sec-dot auto"></span>
+        <span class="fc-sec-title">실시간 자동조치 스트림 (STREAM)</span>
+      </div>
+      <div id="console-feed" class="fc-feed-list">
+        <div class="fc-feed-empty">재생 시 실시간 자동 보정 내역이 수신됩니다.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 플로팅 런처 알약 배지 (콘솔 최소화 시 우측 하단에 표시) -->
+  <button class="fab-launcher" id="fab-launcher" title="실시간 알람 관제창 열기">
+    <span class="fab-launcher-dot"></span>
+    <span class="fab-launcher-title">실시간 관제</span>
+    <span class="fab-launcher-badge" id="fab-badge">정상 (0)</span>
+  </button>
+
+</div>
+
+<!-- Hidden compatibility targets for app.js -->
+<div id="log" style="display:none;"></div>
+<div id="na" style="display:none;"></div>
+<div id="nc" style="display:none;"></div>
+<div id="logtabs" style="display:none;"></div>
+<div id="kpi" style="display:none;"></div>
+
+<!-- Core Scripts -->
+<script src="snowui-shell.js"></script>
+<script src="data.js?v=1788224870"></script>
+<script src="app.js?v=1788224870"></script>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     CMP Cockpit Extension Script (3D Digital Twin, Speedometer, Bars, Fab Console)
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  const S = window.SCENARIOS;
+  let activeFilter = 'all';
+
+  // 센서 이상(SNSR) 알람 마크 색상을 노란색(경고/Warning)으로 지정
+  if (typeof COL !== 'undefined') {
+    COL.SNSR = '#ff9f0a';
+  }
+
+  window.switchEqp = function(i) {
+    if (typeof eqp !== 'undefined') {
+      eqp = i;
+      document.querySelectorAll('#eqps button').forEach((x, idx) => x.classList.toggle('on', idx === eqp));
+      if (typeof renderCharts === 'function') renderCharts();
+      updateTwinAndGauges();
+    }
+  };
+
+  // 1. 3D 디지털 트윈 & 텔레메트리 게이지 갱신
+  function updateTwinAndGauges() {
+    const st = window.__state ? window.__state() : null;
+    if (!st || !S) return;
+    const curStep = st.cur;
+    const dayIdx = typeof day !== 'undefined' ? day : 0;
+    const eqpIdx = typeof eqp !== 'undefined' ? eqp : 0;
+    const d = S[dayIdx];
+    if (!d || !d.equipments[eqpIdx]) return;
+    const e = d.equipments[eqpIdx];
+    const L = st.live[e.id];
+    if (!L) return;
+
+    const isHalted = st.halt[e.id];
+    const isRunning = (typeof playing !== 'undefined' && playing) && curStep < e.series.t.length - 1 && !isHalted;
+
+    const twinName = document.getElementById('twin-ch-name');
+    if (twinName) twinName.textContent = `${e.id} (${e.type}급)`;
+
+    const card = document.getElementById('cmp-twin-card');
+    if (card) {
+      card.classList.toggle('is-running', isRunning);
+      card.classList.toggle('is-halted', isHalted);
+    }
+
+    const badge = document.getElementById('twin-status-badge');
+    const overlay = document.getElementById('dicing-3d-halt-overlay');
+
+    const proc = L.proc[curStep] || 310.0;
+    const air = L.air[curStep] || 300.0;
+    const dT = (proc - air).toFixed(1);
+    const rpm = L.rpm[curStep] || 1500;
+    const torque = L.torque[curStep] || 35.0;
+    const power = L.power[curStep] || 5500;
+    const wear = L.wear[curStep] || 40.0;
+
+    if (isHalted) {
+      if (badge) badge.innerHTML = `<span class="badge bad">🔴 설비 정지 (HALTED)</span>`;
+      if (overlay) overlay.style.opacity = '1';
+
+      document.getElementById('g-proc').textContent = `${proc.toFixed(1)} K`;
+      document.getElementById('g-proc').className = 'gauge-val alert';
+      document.getElementById('g-proc-sub').textContent = '설비 긴급 정지 (공정 냉각 중)';
+
+      document.getElementById('g-torque').textContent = '0.0 Nm';
+      document.getElementById('g-torque').className = 'gauge-val alert';
+      document.getElementById('g-torque-sub').textContent = '구동 모터 정지';
+
+      document.getElementById('g-power').textContent = '0 W';
+      document.getElementById('g-power').className = 'gauge-val alert';
+
+      document.getElementById('g-wear').textContent = `${wear.toFixed(1)} min`;
+      document.getElementById('g-wear').className = 'gauge-val alert';
+      document.getElementById('g-wear-sub').textContent = '블레이드 공구 교체 대기';
+
+      if (document.getElementById('hud-3d-rpm')) document.getElementById('hud-3d-rpm').textContent = '0 RPM';
+      if (document.getElementById('hud-3d-power')) document.getElementById('hud-3d-power').textContent = '0 W';
+      if (document.getElementById('hud-3d-flow')) document.getElementById('hud-3d-flow').textContent = '0.0 L/min';
+      if (document.getElementById('hud-3d-wear')) document.getElementById('hud-3d-wear').textContent = `${wear.toFixed(1)} min`;
+    } else {
+      if (badge) {
+        badge.innerHTML = isRunning
+          ? `<span class="badge ok">🟢 가공 중 (RUNNING)</span>`
+          : `<span class="badge ghost">⏸ 일시정지 (PAUSED)</span>`;
+      }
+      if (overlay) overlay.style.opacity = '0';
+
+      document.getElementById('g-proc').textContent = `${proc.toFixed(1)} K`;
+      document.getElementById('g-proc').className = dT < 8.6 && rpm < 1380 ? 'gauge-val alert' : 'gauge-val ok';
+      document.getElementById('g-proc-sub').textContent = `방열 여유 ${dT} K (정상)`;
+
+      document.getElementById('g-torque').textContent = `${torque.toFixed(1)} Nm`;
+      document.getElementById('g-torque').className = 'gauge-val';
+      document.getElementById('g-torque-sub').textContent = '마모 연동 한계 내 제어';
+
+      document.getElementById('g-power').textContent = `${power.toLocaleString()} W`;
+      document.getElementById('g-power').className = power > 9000 || power < 3500 ? 'gauge-val alert' : 'gauge-val';
+
+      document.getElementById('g-wear').textContent = `${wear.toFixed(1)} min`;
+      document.getElementById('g-wear').className = wear >= 180 ? 'gauge-val warn' : 'gauge-val';
+      document.getElementById('g-wear-sub').textContent = `잔여 ${(Math.max(0, 200 - wear)).toFixed(1)} min (임계 200min)`;
+
+      if (document.getElementById('hud-3d-rpm')) document.getElementById('hud-3d-rpm').textContent = `${rpm.toLocaleString()} RPM`;
+      if (document.getElementById('hud-3d-power')) document.getElementById('hud-3d-power').textContent = `${power.toLocaleString()} W`;
+      if (document.getElementById('hud-3d-flow')) document.getElementById('hud-3d-flow').textContent = isRunning ? '2.4 L/min' : '0.0 L/min';
+      if (document.getElementById('hud-3d-wear')) document.getElementById('hud-3d-wear').textContent = `${wear.toFixed(1)} min`;
+    }
+  }
+
+  // 2. 속도계 & 가로 막대 그래프 갱신
+  function updateSpeedoAndBars() {
+    const st = window.__state ? window.__state() : null;
+    if (!st || !S) return;
+    const curStep = st.cur;
+    const dayIdx = typeof day !== 'undefined' ? day : 0;
+    const eqpIdx = typeof eqp !== 'undefined' ? eqp : 0;
+    const d = S[dayIdx];
+    if (!d || !d.equipments[eqpIdx]) return;
+    const e = d.equipments[eqpIdx];
+    const L = st.live[e.id];
+    if (!L) return;
+
+    const isHalted = st.halt[e.id];
+    const power = isHalted ? 0 : (L.power[curStep] || 5500);
+
+    // 속도계 바늘 회전: 2,000W ~ 10,000W (-120도 ~ +120도, 240도 원호 매핑)
+    const pClamped = Math.max(2000, Math.min(10000, power));
+    const angle = isHalted ? -120 : (240 * ((pClamped - 2000) / 8000) - 120);
+    const needle = document.getElementById('speedo-needle-group');
+    if (needle) needle.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+
+    const valEl = document.getElementById('speedo-power-val');
+    const descEl = document.getElementById('speedo-power-desc');
+    if (valEl) valEl.textContent = isHalted ? '0' : power.toLocaleString();
+    if (descEl) {
+      if (isHalted) {
+        descEl.textContent = '설비 정지 (전력 소멸)';
+        descEl.className = 'speedo-sub-row bad';
+      } else if (power > 9000) {
+        descEl.textContent = '과전력 경보 (9,000W 초과)';
+        descEl.className = 'speedo-sub-row bad';
+      } else if (power < 3500) {
+        descEl.textContent = '저전력 주의 (3,500W 미만)';
+        descEl.className = 'speedo-sub-row warn';
+      } else {
+        descEl.textContent = '스핀들 전력 정상 제어 중';
+        descEl.className = 'speedo-sub-row ok';
+      }
+    }
+
+    // 가로 막대 그래프 5종
+    const prog = Math.max(...d.equipments.map(eq => st.dIdx[eq.id]));
+    const rawCount = d.raw_cum ? d.raw_cum[Math.max(prog, 0)] : 0;
+    const actions = d.actions.filter(c => st.dIdx[c.eqp] >= c.step);
+    const autoCount = actions.filter(c => c.auto).length;
+    // 실제 설비 비상 정지 대상: CRIT 등급 (마모 200min 초과 공구 교체 또는 조치 실패 에스컬레이션)
+    const critHaltCount = actions.filter(c => !c.auto && c.grade === 'CRIT').length;
+    // 센서 신뢰성 게이트 차단: 센서 고착/이상으로 인한 오조치 차단 (라인 무중단 가공 유지)
+    const alarms = d.alarms.filter(a => typeof alarmAt !== 'undefined' && alarmAt[a.id] !== undefined);
+    const sensorAvoidCount = actions.filter(c => c.grade === 'SNSR').length || alarms.filter(a => a.blocked).length;
+
+    let haltStepsTotal = 0;
+    d.equipments.forEach(eq => {
+      if (st.live[eq.id]) haltStepsTotal += st.live[eq.id].halt.reduce((x,y)=>x+y,0);
+    });
+    const dtMinutes = haltStepsTotal * 6;
+
+    const maxRaw = 132;
+    document.getElementById('b-raw-val').textContent = `${rawCount}건`;
+    document.getElementById('b-raw-fill').style.width = `${Math.min(100, (rawCount/maxRaw)*100)}%`;
+
+    document.getElementById('b-auto-val').textContent = `${autoCount}건`;
+    document.getElementById('b-auto-fill').style.width = `${Math.min(100, autoCount * 18)}%`;
+
+    document.getElementById('b-man-val').textContent = `${critHaltCount}건`;
+    document.getElementById('b-man-fill').style.width = `${Math.min(100, critHaltCount * 50)}%`;
+    if (document.getElementById('b-man-sub')) {
+      document.getElementById('b-man-sub').textContent = critHaltCount
+        ? `${critHaltCount}건 설비 비상 정지 (엔지니어 현장 교체 승인 필요)`
+        : '현재 정지 설비 없음 (마모 200min 미만 안전 가동 중)';
+    }
+
+    document.getElementById('b-avoid-val').textContent = `${sensorAvoidCount}건`;
+    document.getElementById('b-avoid-fill').style.width = `${Math.min(100, sensorAvoidCount * 35)}%`;
+    if (document.getElementById('b-avoid-sub')) {
+      document.getElementById('b-avoid-sub').textContent = sensorAvoidCount
+        ? `센서 고착 감지 ${sensorAvoidCount}건 오조치 차단 (가공 라인 정상 가동)`
+        : '센서 신뢰성 정상 (오조치 위험 없음)';
+    }
+
+    document.getElementById('b-dt-val').textContent = `${dtMinutes}분`;
+    document.getElementById('b-dt-fill').style.width = `${Math.min(100, dtMinutes / 2)}%`;
+    document.getElementById('b-dt-sub').textContent = dtMinutes ? `판단 대기 중 누적 다운타임: ${dtMinutes}분` : '정상 가공 가동 (손실 0분)';
+  }
+
+  // 3. 플로팅 팹 알람 관제창 (Floating Fab Console) 갱신
+  function updateFabConsole() {
+    const st = window.__state ? window.__state() : null;
+    if (!st || !S) return;
+    const dayIdx = typeof day !== 'undefined' ? day : 0;
+    const d = S[dayIdx];
+    if (!d) return;
+
+    const alarms = d.alarms.filter(a => typeof alarmAt !== 'undefined' && alarmAt[a.id] !== undefined);
+    const actions = d.actions.filter(c => st.dIdx[c.eqp] >= c.step);
+
+    const autoCount = actions.filter(c => c.auto).length;
+    const haltCount = d.equipments.filter(e => st.halt[e.id]).length;
+    const warnCount = actions.filter(c => !c.auto && c.grade !== 'CRIT').length;
+    const totalCount = alarms.length + actions.length;
+
+    // 카운터 및 배지 갱신
+    if (document.getElementById('fc-cnt')) document.getElementById('fc-cnt').textContent = totalCount;
+    if (document.getElementById('dock-top-cnt')) document.getElementById('dock-top-cnt').textContent = totalCount;
+    if (document.getElementById('fab-badge')) document.getElementById('fab-badge').textContent = `관제 (${totalCount})`;
+
+    if (document.getElementById('fc-crit')) document.getElementById('fc-crit').textContent = haltCount;
+    if (document.getElementById('fc-warn')) document.getElementById('fc-warn').textContent = warnCount;
+    if (document.getElementById('fc-auto')) document.getElementById('fc-auto').textContent = autoCount;
+
+    // 고우선순위 Pinned 영역 (긴급 판단 큐 #hold 복제 또는 긴급 상태 표출)
+    const pinnedEl = document.getElementById('console-pinned');
+    if (pinnedEl) {
+      if (st.queue && st.queue.length) {
+        pinnedEl.innerHTML = st.queue.map(c => {
+          const a = d.alarms.find(x => x.id === c.alarm_id);
+          const k = c.alarm_id + (c.esc ? '#esc' : '');
+          return `<div class="fc-card man">
+            <div class="fc-card-top">
+              <span class="fc-card-tag man">🔴 긴급 판단 대기</span>
+              <span class="fc-card-time">${c.time} · ${c.eqp}</span>
+            </div>
+            <div class="fc-card-title">${a ? a.ko : '설비 이상'} — ${c.act}</div>
+            <div class="fc-card-desc">${c.why}</div>
+            <div class="hold-b" style="display:flex;gap:8px;margin-top:8px;">
+              <button data-k="${k}" data-d="승인" style="background:#ff453a;color:#fff;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;font-weight:700;font-size:11.5px;">승인 · 재가동</button>
+              <button class="ghost" data-k="${k}" data-d="보류" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:#aaa;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:11.5px;">정지 유지</button>
+            </div>
+          </div>`;
+        }).join('');
+      } else {
+        pinnedEl.innerHTML = '<div class="fc-pinned-empty">현재 긴급 정지 및 대기 없음 (정상 가동)</div>';
+      }
+    }
+
+    // 스트림 목록 (Actions & Alarms)
+    const feedEl = document.getElementById('console-feed');
+    if (!feedEl) return;
+
+    const cards = [];
+
+    // 1. 자동 실행 카드
+    actions.filter(c => c.auto).forEach(c => {
+      if (activeFilter === 'man' || activeFilter === 'warn') return;
+      cards.push({
+        type: 'auto',
+        time: c.time,
+        eqp: c.eqp,
+        badge: '⚡ 무중단 자동실행',
+        badgeClass: 'auto',
+        title: `${c.act} (${c.eqp})`,
+        desc: c.why,
+        result: c.result
+      });
+    });
+
+    // 2. 알람 및 사람 판단 카드
+    alarms.forEach(a => {
+      const act = actions.find(c => c.alarm_id === a.id);
+      const isCrit = a.grade === 'CRIT';
+      const isWarn = a.grade === 'MAJ' || a.grade === 'MIN';
+      const isSnsr = a.grade === 'SNSR';
+
+      if (activeFilter === 'auto' && !act?.auto) return;
+      if (activeFilter === 'man' && !isCrit) return;
+      if (activeFilter === 'warn' && !isWarn && !isSnsr) return;
+
+      cards.push({
+        type: isCrit ? 'man' : (isWarn || isSnsr) ? 'warn' : 'auto',
+        time: a.time,
+        eqp: a.eqp,
+        badge: isCrit ? '🔴 설비 정지' : isSnsr ? '🟡 센서 점검 경고' : '🟡 사전 예보',
+        badgeClass: isCrit ? 'man' : (isWarn || isSnsr) ? 'warn' : 'auto',
+        title: `${a.ko} (${a.value}) · ${a.eqp}`,
+        desc: (act ? act.why : '') + (a.sub && a.sub.length ? ` [파생 ${a.sub.length}건]` : ''),
+        result: act ? act.result : (a.blocked ? '센서 불일치로 자동조치 차단' : '감시 지속')
+      });
+    });
+
+    if (cards.length) {
+      feedEl.innerHTML = cards.reverse().map(cd => `
+        <div class="fc-card ${cd.type}">
+          <div class="fc-card-top">
+            <span class="fc-card-tag ${cd.badgeClass}">${cd.badge}</span>
+            <span class="fc-card-time">${cd.time} · ${cd.eqp}</span>
+          </div>
+          <div class="fc-card-title">${cd.title}</div>
+          <div class="fc-card-desc">${cd.desc}</div>
+          <div class="fc-card-res">✓ ${cd.result}</div>
+        </div>
+      `).join('');
+    } else {
+      feedEl.innerHTML = '<div class="fc-feed-empty">재생 시 실시간 자동 보정 내역이 수신됩니다.</div>';
+    }
+  }
+
+  // 4. 원래 paint() 함수 가로채기
+  if (typeof paint === 'function') {
+    const origPaint = paint;
+    paint = function() {
+      origPaint();
+      updateTwinAndGauges();
+      updateSpeedoAndBars();
+      updateFabConsole();
+    };
+  }
+
+  // 5. 플로팅 팹 콘솔 UI 인터랙션 (열기/닫기/최소화/필터)
+  const fc = document.getElementById('fab-console');
+  const launcher = document.getElementById('fab-launcher');
+  const minBtn = document.getElementById('fab-min-btn');
+  const closeBtn = document.getElementById('fab-close-btn');
+  const topDockBtn = document.getElementById('dock-toggle-top');
+
+  function openConsole() {
+    if (fc) fc.classList.remove('is-closed');
+    if (launcher) launcher.classList.remove('is-active');
+  }
+  function closeConsole() {
+    if (fc) fc.classList.add('is-closed');
+    if (launcher) launcher.classList.add('is-active');
+  }
+
+  if (minBtn) minBtn.onclick = closeConsole;
+  if (closeBtn) closeBtn.onclick = closeConsole;
+  if (launcher) launcher.onclick = openConsole;
+  if (topDockBtn) {
+    topDockBtn.onclick = () => {
+      if (fc && fc.classList.contains('is-closed')) openConsole();
+      else closeConsole();
+    };
+  }
+
+  // 필터 탭
+  document.querySelectorAll('.fc-tab').forEach(tb => {
+    tb.onclick = () => {
+      document.querySelectorAll('.fc-tab').forEach(x => x.classList.remove('on'));
+      tb.classList.add('on');
+      activeFilter = tb.dataset.f;
+      updateFabConsole();
+    };
+  });
+
+  // HUD 박스 클릭 시 빠른 필터 연동
+  document.querySelectorAll('.fc-hud-box').forEach(bx => {
+    bx.onclick = () => {
+      const f = bx.dataset.f;
+      document.querySelectorAll('.fc-tab').forEach(tb => {
+        tb.classList.toggle('on', tb.dataset.f === f);
+      });
+      activeFilter = f;
+      updateFabConsole();
+    };
+  });
+
+  // Pinned #hold 승인/보류 이벤트 위임
+  const pinnedBox = document.getElementById('console-pinned');
+  if (pinnedBox) {
+    pinnedBox.onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b || !b.dataset.k) return;
+      const originalHoldBtn = document.querySelector(`#hold button[data-k="${b.dataset.k}"][data-d="${b.dataset.d}"]`);
+      if (originalHoldBtn) {
+        originalHoldBtn.click();
+      }
+    };
+  }
+
+  // ═══ 6. 실시간 알람 관제 창 드래그(이동) 및 8방향 리사이즈(크기 조절) 엔진 ═══
+  (function initFabConsoleDragAndResize() {
+    if (!fc) return;
+    const head = fc.querySelector('.fc-head');
+
+    function ensureInlineCoords() {
+      const rect = fc.getBoundingClientRect();
+      const comp = window.getComputedStyle(fc);
+      if (comp.right !== 'auto' && (!fc.style.left || fc.style.left === 'auto')) {
+        fc.style.left = `${rect.left}px`;
+        fc.style.top = `${rect.top}px`;
+        fc.style.width = `${rect.width}px`;
+        fc.style.height = `${rect.height}px`;
+        fc.style.right = 'auto';
+        fc.style.bottom = 'auto';
+      }
+    }
+
+    // A. 헤더 드래그 이동 (Dragging)
+    let isDragging = false;
+    let dragStartX = 0, dragStartY = 0;
+    let startLeft = 0, startTop = 0;
+
+    if (head) {
+      head.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button') || e.target.closest('.fc-ctrl-group')) return;
+        ensureInlineCoords();
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        const rect = fc.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        fc.classList.add('is-dragging');
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+      });
+    }
+
+    // B. 8방향 창 크기 조절 (Resizing)
+    let isResizing = false;
+    let resizeDir = '';
+    let resizeStartX = 0, resizeStartY = 0;
+    let origLeft = 0, origTop = 0, origW = 0, origH = 0;
+
+    const minW = 320, minH = 240;
+    const getMaxW = () => Math.min(900, window.innerWidth - 20);
+    const getMaxH = () => Math.min(window.innerHeight - 30, window.innerHeight * 0.92);
+
+    fc.querySelectorAll('.fc-resizer').forEach(resizer => {
+      resizer.addEventListener('mousedown', (e) => {
+        ensureInlineCoords();
+        isResizing = true;
+        resizeDir = resizer.dataset.dir;
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        const rect = fc.getBoundingClientRect();
+        origLeft = rect.left;
+        origTop = rect.top;
+        origW = rect.width;
+        origH = rect.height;
+        fc.classList.add('is-resizing');
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    // 글로벌 마우스 이동 리스너
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        const w = fc.offsetWidth;
+        const h = fc.offsetHeight;
+        const maxL = window.innerWidth - w - 8;
+        const maxT = window.innerHeight - 45;
+        const nextL = Math.max(8, Math.min(maxL, startLeft + dx));
+        const nextT = Math.max(8, Math.min(maxT, startTop + dy));
+        fc.style.left = `${nextL}px`;
+        fc.style.top = `${nextT}px`;
+      } else if (isResizing) {
+        const dx = e.clientX - resizeStartX;
+        const dy = e.clientY - resizeStartY;
+        let newW = origW;
+        let newH = origH;
+        let newL = origLeft;
+        let newT = origTop;
+
+        // 가로 크기 및 위치 계산
+        if (resizeDir.includes('e')) {
+          newW = Math.max(minW, Math.min(getMaxW(), origW + dx));
+        } else if (resizeDir.includes('w')) {
+          const maxW = getMaxW();
+          const candidateW = Math.max(minW, Math.min(maxW, origW - dx));
+          newL = origLeft + (origW - candidateW);
+          if (newL < 8) {
+            const diff = 8 - newL;
+            newL = 8;
+            newW = candidateW - diff;
+          } else {
+            newW = candidateW;
+          }
+        }
+
+        // 세로 크기 및 위치 계산
+        if (resizeDir.includes('s')) {
+          newH = Math.max(minH, Math.min(getMaxH(), origH + dy));
+        } else if (resizeDir.includes('n')) {
+          const maxH = getMaxH();
+          const candidateH = Math.max(minH, Math.min(maxH, origH - dy));
+          newT = origTop + (origH - candidateH);
+          if (newT < 8) {
+            const diff = 8 - newT;
+            newT = 8;
+            newH = candidateH - diff;
+          } else {
+            newH = candidateH;
+          }
+        }
+
+        fc.style.left = `${newL}px`;
+        fc.style.top = `${newT}px`;
+        fc.style.width = `${newW}px`;
+        fc.style.height = `${newH}px`;
+      }
+    });
+
+    // 글로벌 마우스 업 리스너
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        fc.classList.remove('is-dragging');
+        document.body.style.userSelect = '';
+      }
+      if (isResizing) {
+        isResizing = false;
+        fc.classList.remove('is-resizing');
+        document.body.style.userSelect = '';
+      }
+    });
+
+    // 브라우저 리사이즈 시 화면 바깥 이탈 방지
+    window.addEventListener('resize', () => {
+      if (!fc.style.left || fc.style.left === 'auto') return;
+      const rect = fc.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        fc.style.left = `${Math.max(8, window.innerWidth - rect.width - 8)}px`;
+      }
+      if (rect.bottom > window.innerHeight - 8) {
+        fc.style.top = `${Math.max(8, window.innerHeight - rect.height - 8)}px`;
+      }
+    });
+  })();
+
+  // 초기 렌더링 동기화
+  setTimeout(() => {
+    updateTwinAndGauges();
+    updateSpeedoAndBars();
+    updateFabConsole();
+  }, 100);
+
+})();
+</script>
+</body>
+</html>
