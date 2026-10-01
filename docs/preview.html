@@ -1394,7 +1394,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0
     <header class="topbar">
       <div class="crumb"><span>Dashboards</span><span class="sep">/</span><b id="crumb-cur">Dicing Overview</b></div>
       <div class="topbar-r">
-        <span class="badge ok" title="UCI AI4I 2020 Predictive Maintenance Dataset">AI4I 2020 반도체 실데이터</span>
+        <span class="badge ok" title="UCI AI4I 2020 Predictive Maintenance Dataset">AI4I 2020 공개 합성 데이터</span>
         <span class="badge ghost" id="daybadge">—</span>
         <!-- Floating Console Dock/Open Button -->
         <button id="dock-toggle-top" class="btn dock-top-btn" title="실시간 알람 관제창 열기/닫기">
@@ -1423,7 +1423,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0
       <div class="hero">
         <h1>반도체 P&amp;T 다이싱 가상계측 &amp; 알람 자동조치 시뮬레이터</h1>
         <p class="sub">
-          UCI AI4I 2020 반도체 절삭 설비 실데이터 기반 3개 호기(DCS-01~03) 야간 10시간 연속 가공(22:00~08:00) 시뮬레이션입니다.
+          UCI AI4I 2020 회전 절삭 설비 공개 합성 데이터 기반(설비 명칭만 다이싱으로 각색) 3개 호기(DCS-01~03) 야간 10시간 연속 가공(22:00~08:00) 시뮬레이션입니다.
           가역적 이상(냉각수 유량·이송 속도)은 <b>무중단 자동 보정</b>되며, 비가역적 블레이드 마모(≥200min) 도달 시 <b>해당 설비만 단독 정지</b> 후 교체 승인을 요청합니다.
         </p>
       </div>
@@ -1695,7 +1695,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0
                     <span class="bar-row-val warn" id="b-raw-val">0건</span>
                   </div>
                   <div class="bar-track"><div class="bar-fill raw" id="b-raw-fill" style="width: 0%;"></div></div>
-                  <div class="bar-row-sub">단순 3σ 임계 이탈 (기존 팹 일괄 알람 유발)</div>
+                  <div class="bar-row-sub">고장 조건 임계 초과 시점 (원인 묶기 전)</div>
                 </div>
 
                 <!-- 2. 가역 조치 무중단 자동 실행 -->
@@ -1789,7 +1789,7 @@ html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0
 
       <footer class="ftr">
         데이터: AI4I 2020 Predictive Maintenance Dataset · UCI Machine Learning Repository (id 601) ·
-        룰 기반 판정 엔진: 물리 사양 100% 일치 검증 · <a class="inline-link" href="https://github.com/jiu7021/Alarm_Resolver" target="_blank" rel="noopener">GitHub Repository</a>
+        룰 기반 판정 엔진: 고장 조건 재현율 방열·전력·과부하 100%, 공구 마모 93.5% · <a class="inline-link" href="https://github.com/jiu7021/Alarm_Resolver" target="_blank" rel="noopener">GitHub Repository</a>
       </footer>
     </div>
   </div>
